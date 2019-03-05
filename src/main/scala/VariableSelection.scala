@@ -329,9 +329,9 @@ object VariableSelection {
     val interactionCoefs = mean(interacs_est(::, *)).t
 
     // Save the results to a csv file
-    //val mergedMatrix = DenseMatrix.horzcat(test_mtInter, alpha_estInter, beta_estInter, theta_est)
-    //val outputFIle = new File("./mainAndInterRandomThin.csv")
-    //breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
+//    val mergedMatrix = DenseMatrix.horzcat(test_mtInter, alpha_estInter, beta_estInter, interacs_est, indics_est)
+//    val outputFIle = new File("./mainAndInterRandomThin.csv")
+//    breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
 
     println("Results: ")
     println("mu and tau:" + mt)
