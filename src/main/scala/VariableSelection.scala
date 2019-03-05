@@ -24,6 +24,7 @@ object VariableSelection {
     val betaCoefs = new DenseMatrix[Double](sampleNo, nk) // to store the coefficients for variable beta
     val thetaCoefs = new DenseMatrix[Double](sampleNo, njk) // to store the coefficients for the interactions, variable theta
     val indicators = new DenseMatrix[Double](sampleNo, njk) //to store the indicator variables I
+    val finalCoefs= new DenseMatrix[Double](sampleNo, njk) //to store the product of the indicator variables and the estimated coefficient
 
     val SumX = y.toArray.sum // the sum of the values of all the observations
 
@@ -51,6 +52,7 @@ object VariableSelection {
     betaCoefs(0, ::) := curBeta.t
     thetaCoefs(0, ::) := curTheta.t.toDenseVector.t
     indicators(0, ::) := curIndics.t.toDenseVector.t
+    finalCoefs(0, ::) := thetaCoefs(0, ::) *:* indicators(0, ::)
 
     for (i <- 1 until noOfIter) {
       println("iter :" + i)
@@ -156,6 +158,7 @@ object VariableSelection {
         betaCoefs(ind, ::) := curBeta.t
         thetaCoefs(ind, ::) := curTheta.t.toDenseVector.t
         indicators(ind, ::) := curIndics.t.toDenseVector.t
+        finalCoefs(ind,::):= thetaCoefs(ind, ::) *:* indicators(ind, ::)
       }
       //curAlpha:= DenseVector(-1.0,4.0,-3.0)
       //curBeta:= DenseVector(-1.0,3.5,-2.0,-0.5)
@@ -164,7 +167,7 @@ object VariableSelection {
       sumbk = 0.0
       sumThetajk = 0.0
     }
-    (mat_mt, alphaCoefs, betaCoefs, thetaCoefs, indicators)
+    (mat_mt, alphaCoefs, betaCoefs, thetaCoefs, indicators, finalCoefs)
   }
 
   /**
@@ -314,13 +317,13 @@ object VariableSelection {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.7
 
-    val (test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est) = time(variableSelection(noOfIters, thin, y, alpha, beta, nj, nk, structure, alphaPriorMean, alphaPriorTau, betaPriorMean, betaPriorTau, mu0, tau0, a, b, interPriorMean, aPrior, bPrior, p))
+    val (test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) = time(variableSelection(noOfIters, thin, y, alpha, beta, nj, nk, structure, alphaPriorMean, alphaPriorTau, betaPriorMean, betaPriorTau, mu0, tau0, a, b, interPriorMean, aPrior, bPrior, p))
     val mt = mean(test_mtInter(::, *)).t
     val alphaEstim = mean(alpha_estInter(::, *)).t
     val betaEstim = mean(beta_estInter(::, *)).t
     val thetaEstim = mean(theta_est(::, *)).t
     val indicsEstim = mean(indics_est(::, *)).t
-    val interactionCoefs = (thetaEstim :* indicsEstim).t
+    val interactionCoefs = mean(interacs_est(::, *)).t
 
     // Save the results to a csv file
     //val mergedMatrix = DenseMatrix.horzcat(test_mtInter, alpha_estInter, beta_estInter, theta_est)
