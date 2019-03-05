@@ -55,8 +55,6 @@ object VariableSelection {
     finalCoefs(0, ::) := thetaCoefs(0, ::) *:* indicators(0, ::)
 
     for (i <- 1 until noOfIter) {
-      println("iter :" + i)
-
       for (j <- 0 until nj) {
         sumaj = sumaj + pow((curAlpha(j) - alphaPriorMean), 2) //estimate the sum used in sampling from Gamma distribution for the precision of alpha
       }
@@ -108,7 +106,6 @@ object VariableSelection {
       // Update Indicators and Interaction terms
       for (j <- 0 until nj) {
         for (k <- 0 until nk) {
-          println(s"j/k: $j / $k")
           val Njk = structure.getDVList(j, k).length // the number of the observations that have alpha==j and beta==k
           val SXjk = structure.getDVList(j, k).sum // the sum of the observations that have alpha==j and beta==k
 
@@ -125,7 +122,6 @@ object VariableSelection {
           val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
 
           val finalsum = newProb0 + newProb1 // to check if it is 1
-          println(s"newProb0 $newProb0 // newProb1 $newProb1 // newSum= $finalsum")
 
           //To test if the Var Selection with the indicator always 1 would give the same results as the saturated model: change the following to var and uncomment the following lines
           //newProb0= 0.0
@@ -144,10 +140,6 @@ object VariableSelection {
             curIndics(j, k) = 0.0
             curTheta(j, k) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / tauTheta)).draw() // sample from the prior of interactions
           }
-          //println("current indicator")
-          //println(curIndics(j,k))
-          //println("------------------")
-
         }
       }
       // Thinning
@@ -167,6 +159,7 @@ object VariableSelection {
       sumbk = 0.0
       sumThetajk = 0.0
     }
+    finalCoefs:= thetaCoefs *:* indicators
     (mat_mt, alphaCoefs, betaCoefs, thetaCoefs, indicators, finalCoefs)
   }
 
@@ -292,7 +285,7 @@ object VariableSelection {
 
   def main(args: Array[String]): Unit = {
     // Read the data
-    val data = csvread(new File("./simulInter.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromBessel/050319/050319.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val alpha = data(::, 1).map(_.toInt)
@@ -302,8 +295,8 @@ object VariableSelection {
     // Parameters
     val nj = data(::, 1).toArray.distinct.length
     val nk = data(::, 2).toArray.distinct.length
-    val noOfIters = 1000000
-    val thin = 100
+    val noOfIters = 1000
+    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -315,7 +308,7 @@ object VariableSelection {
     val a = 1
     val b = 0.0001
     val interPriorMean = 0.0 //common mean for all the interaction effects
-    val p = 0.7
+    val p = 0.2
 
     val (test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) = time(variableSelection(noOfIters, thin, y, alpha, beta, nj, nk, structure, alphaPriorMean, alphaPriorTau, betaPriorMean, betaPriorTau, mu0, tau0, a, b, interPriorMean, aPrior, bPrior, p))
     val mt = mean(test_mtInter(::, *)).t
