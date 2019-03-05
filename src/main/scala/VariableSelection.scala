@@ -19,7 +19,7 @@ object VariableSelection {
     val sampleNo = noOfIter / thin + 1 //the number of samples created from the MCMC
     val njk = structure.nj * structure.nk // the number of levels of interactions
 
-    val mat_mt = new DenseMatrix[Double](sampleNo, 2) //to store mu and tau
+    val mat_mt = new DenseMatrix[Double](2, sampleNo) //to store mu and tau
     val alphaCoefs = new DenseMatrix[Double](sampleNo, structure.nj) //to store the coefficients for variable alpha
     val betaCoefs = new DenseMatrix[Double](sampleNo, structure.nk) // to store the coefficients for variable beta
     val thetaCoefs = new DenseMatrix[Double](sampleNo, njk) // to store the coefficients for the interactions, variable theta
@@ -47,7 +47,7 @@ object VariableSelection {
 
     var ind = 0 //index used for thinning
     //Initialise with 0 in the first row the matrices where we will store the values to start the Gibbs sampler from 0s
-    mat_mt(0, ::) := DenseVector(mu, tau).t
+    mat_mt(::,0) := DenseVector(mu, tau)
     alphaCoefs(0, ::) := curAlpha.t
     betaCoefs(0, ::) := curBeta.t
     thetaCoefs(0, ::) := curTheta.t.toDenseVector.t
@@ -137,7 +137,7 @@ object VariableSelection {
       // Thinning
       if ((i % thin).equals(0)) {
         ind = ind + 1
-        mat_mt(ind, ::) := DenseVector(mu, tau).t
+        mat_mt(::, ind) := DenseVector(mu, tau)
         alphaCoefs(ind, ::) := curAlpha.t
         betaCoefs(ind, ::) := curBeta.t
         thetaCoefs(ind, ::) := curTheta.t.toDenseVector.t
@@ -321,7 +321,7 @@ object VariableSelection {
           p)
       )
 
-    val mt = mean(test_mtInter(::, *)).t
+    val mt = mean(test_mtInter(*, ::)).t
     val alphaEstim = mean(alpha_estInter(::, *)).t
     val betaEstim = mean(beta_estInter(::, *)).t
     val thetaEstim = mean(theta_est(::, *)).t
