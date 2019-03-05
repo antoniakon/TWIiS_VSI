@@ -13,25 +13,25 @@ object VariableSelection {
   //---------------------- Main effects and interactions as random effects + variable selection ---------------------------//
   // the model is: Xijk|mu,aj,bk,gjk,Ijk tau~N(mu+aj+bk+Ijk*gjk,tau^-1)
 
-  def variableSelection(noOfIter: Int, thin: Int, y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], nj: Int, nk: Int, structure: DVStructure, alphaPriorMean: Double, alphaPriorVar: Double, betaPriorMean: Double, betaPriorVar: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
+  def variableSelection(noOfIter: Int, thin: Int, y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], structure: DVStructure, alphaPriorMean: Double, alphaPriorVar: Double, betaPriorMean: Double, betaPriorVar: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
 
     val N = y.length //the number of observations
     val sampleNo = noOfIter / thin + 1 //the number of samples created from the MCMC
-    val njk = nj * nk // the number of levels of interactions
+    val njk = structure.nj * structure.nk // the number of levels of interactions
 
     val mat_mt = new DenseMatrix[Double](sampleNo, 2) //to store mu and tau
-    val alphaCoefs = new DenseMatrix[Double](sampleNo, nj) //to store the coefficients for variable alpha
-    val betaCoefs = new DenseMatrix[Double](sampleNo, nk) // to store the coefficients for variable beta
+    val alphaCoefs = new DenseMatrix[Double](sampleNo, structure.nj) //to store the coefficients for variable alpha
+    val betaCoefs = new DenseMatrix[Double](sampleNo, structure.nk) // to store the coefficients for variable beta
     val thetaCoefs = new DenseMatrix[Double](sampleNo, njk) // to store the coefficients for the interactions, variable theta
     val indicators = new DenseMatrix[Double](sampleNo, njk) //to store the indicator variables I
     val finalCoefs= new DenseMatrix[Double](sampleNo, njk) //to store the product of the indicator variables and the estimated coefficient
 
     val SumX = y.toArray.sum // the sum of the values of all the observations
 
-    val curAlpha = DenseVector.zeros[Double](nj) //the current values of the coefficients for every iteration. Initialised with 0.
-    val curBeta = DenseVector.zeros[Double](nk)
-    val curTheta = DenseMatrix.zeros[Double](nj, nk)
-    val curIndics = DenseMatrix.zeros[Double](nj, nk)
+    val curAlpha = DenseVector.zeros[Double](structure.nj) //the current values of the coefficients for every iteration. Initialised with 0.
+    val curBeta = DenseVector.zeros[Double](structure.nk)
+    val curTheta = DenseMatrix.zeros[Double](structure.nj, structure.nk)
+    val curIndics = DenseMatrix.zeros[Double](structure.nj, structure.nk)
 
     var mu = 0.0 //initialise the sampler at mu=0
     var tau = 1.0 // initialise the sampler at tau=1.0
@@ -55,34 +55,32 @@ object VariableSelection {
     finalCoefs(0, ::) := thetaCoefs(0, ::) *:* indicators(0, ::)
 
     for (i <- 1 until noOfIter) {
-      for (j <- 0 until nj) {
+      for (j <- 0 until structure.nj) {
         sumaj = sumaj + pow((curAlpha(j) - alphaPriorMean), 2) //estimate the sum used in sampling from Gamma distribution for the precision of alpha
       }
 
-      for (k <- 0 until nk) {
+      for (k <- 0 until structure.nk) {
         sumbk = sumbk + pow((curBeta(k) - betaPriorMean), 2) //estimate the sum used in sampling from Gamma distribution for the precision of beta
       }
 
-      for (j <- 0 until nj) {
-        for (k <- 0 until nk) {
+      for (j <- 0 until structure.nj) {
+        for (k <- 0 until structure.nk) {
           sumThetajk = sumThetajk + pow((curTheta(j, k) - thetaPriorMean), 2) //estimate the sum used in sampling from Gamma distribution for the precision of theta/interacions
         }
       }
 
-      tauAlpha = breeze.stats.distributions.Gamma(aPrior + nj / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
-      tauBeta = breeze.stats.distributions.Gamma(aPrior + nk / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
+      tauAlpha = breeze.stats.distributions.Gamma(aPrior + structure.nj / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
+      tauBeta = breeze.stats.distributions.Gamma(aPrior + structure.nk / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
       tauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
       //Update mu and tau
-      //mu = 3.10
-      //tau = 1.0
       val varMu = 1.0 / (tau0 + N * tau) //the variance for mu
-      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, curAlpha, curBeta, nj, nk, curTheta, curIndics))) * varMu
+      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, curAlpha, curBeta, structure.nj, structure.nk, curTheta, curIndics))) * varMu
       mu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
       tau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(y, alpha, beta, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
 
       // Update alphaj
-      for (j <- 0 until nj) {
+      for (j <- 0 until structure.nj) {
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
         val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
         val SumBeta = sumBetaEffGivenAlpha(y, alpha, beta, j, curBeta) //the sum of the beta effects given alpha
@@ -93,7 +91,7 @@ object VariableSelection {
       }
 
       // Update betak
-      for (k <- 0 until nk) {
+      for (k <- 0 until structure.nk) {
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
         val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
         val SumAlpha = sumAlphaGivenBeta(y, alpha, beta, k, curAlpha) //the sum of the alpha effects given beta
@@ -104,8 +102,8 @@ object VariableSelection {
       }
 
       // Update Indicators and Interaction terms
-      for (j <- 0 until nj) {
-        for (k <- 0 until nk) {
+      for (j <- 0 until structure.nj) {
+        for (k <- 0 until structure.nk) {
           val Njk = structure.getDVList(j, k).length // the number of the observations that have alpha==j and beta==k
           val SXjk = structure.getDVList(j, k).sum // the sum of the observations that have alpha==j and beta==k
 
@@ -120,12 +118,6 @@ object VariableSelection {
           val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
           var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
           val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
-
-          val finalsum = newProb0 + newProb1 // to check if it is 1
-
-          //To test if the Var Selection with the indicator always 1 would give the same results as the saturated model: change the following to var and uncomment the following lines
-          //newProb0= 0.0
-          //u= 1.0
 
           if (newProb0 < u) {
             // the prob estimated above is for when the indicator=0, so if the prob is < u the indicator should be 1
@@ -152,9 +144,7 @@ object VariableSelection {
         indicators(ind, ::) := curIndics.t.toDenseVector.t
         finalCoefs(ind,::):= thetaCoefs(ind, ::) *:* indicators(ind, ::)
       }
-      //curAlpha:= DenseVector(-1.0,4.0,-3.0)
-      //curBeta:= DenseVector(-1.0,3.5,-2.0,-0.5)
-      //curTheta:= DenseMatrix((-0.5,-2.0,0.0,2.5),  (0.0,-0.5,-1.0,1.5), (0.5,2.5,1.0,-4.0))
+
       sumaj = 0.0
       sumbk = 0.0
       sumThetajk = 0.0
@@ -293,8 +283,6 @@ object VariableSelection {
     val structure = new DVStructure(y, alpha, beta)
 
     // Parameters
-    val nj = data(::, 1).toArray.distinct.length
-    val nk = data(::, 2).toArray.distinct.length
     val noOfIters = 1000
     val thin = 10
     val aPrior = 1
@@ -310,7 +298,29 @@ object VariableSelection {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
 
-    val (test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) = time(variableSelection(noOfIters, thin, y, alpha, beta, nj, nk, structure, alphaPriorMean, alphaPriorTau, betaPriorMean, betaPriorTau, mu0, tau0, a, b, interPriorMean, aPrior, bPrior, p))
+    val (test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) =
+      time(
+        variableSelection(
+          noOfIters,
+          thin,
+          y,
+          alpha,
+          beta,
+          structure,
+          alphaPriorMean,
+          alphaPriorTau,
+          betaPriorMean,
+          betaPriorTau,
+          mu0,
+          tau0,
+          a,
+          b,
+          interPriorMean,
+          aPrior,
+          bPrior,
+          p)
+      )
+
     val mt = mean(test_mtInter(::, *)).t
     val alphaEstim = mean(alpha_estInter(::, *)).t
     val betaEstim = mean(beta_estInter(::, *)).t
