@@ -20,6 +20,7 @@ object VariableSelection {
     val njk = structure.nj * structure.nk // Number of levels of interactions
 
     val mat_mt = new DenseMatrix[Double](2, sampleNo) // To store mu and tau
+    val mat_taus = new DenseMatrix[Double](3, sampleNo) // To store tau_alpha, tau_beta, tau_theta
     val alphaCoefs = new DenseMatrix[Double](structure.nj, sampleNo) // To store the coefficients for variable alpha
     val betaCoefs = new DenseMatrix[Double](structure.nk, sampleNo) // To store the coefficients for variable beta
     val thetaCoefs = new DenseMatrix[Double](njk, sampleNo) // To store the coefficients for the interactions, variable theta
@@ -38,8 +39,7 @@ object VariableSelection {
 
     var tauAlpha = 1.0 // Initialise the precision for alpha (this is actually tau_alpha)
     var tauBeta = 1.0 // Initialise the precision for beta (this is actually tau_beta)
-    var tauTheta = 1.0 // Initialise the precision for beta (this is actually tau_theta)
-
+    var tauTheta = 1.0 // Initialise the precision for theta (this is actually tau_theta)
 
     var sumaj = 0.0 //Used for sampling the precision of alpha from the FCD (initialised at 0)
     var sumbk = 0.0 //Used for sampling the precision of alpha from the FCD (initialised at 0)
@@ -49,6 +49,7 @@ object VariableSelection {
 
     //Start the Gibbs sampler from 0s. Initialise with 0 in the first row the matrices where we will store the sampled values.
     mat_mt(::,0) := DenseVector(mu, tau)
+    mat_taus(::,0) := DenseVector(tauAlpha, tauBeta, tauTheta)
     alphaCoefs(::,0) := curAlpha
     betaCoefs(::,0) := curBeta
     thetaCoefs(::,0) := curTheta.toDenseVector
@@ -71,8 +72,11 @@ object VariableSelection {
       }
 
       tauAlpha = breeze.stats.distributions.Gamma(aPrior + structure.nj / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
+      //println("tauA: " + tauAlpha)
       tauBeta = breeze.stats.distributions.Gamma(aPrior + structure.nk / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
+      //println("tauB: " +tauBeta)
       tauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
+      //println("tauTheta: " +tauTheta)
 
       //Update mu and tau
       val varMu = 1.0 / (tau0 + N * tau) //the variance for mu
@@ -138,6 +142,7 @@ object VariableSelection {
       if ((i % thin).equals(0)) {
         ind = ind + 1
         mat_mt(::, ind) := DenseVector(mu, tau)
+        mat_taus(::, ind) := DenseVector(tauAlpha, tauBeta, tauTheta)
         alphaCoefs(::, ind) := curAlpha
         betaCoefs(::, ind) := curBeta
         thetaCoefs(::, ind) := curTheta.toDenseVector
@@ -150,7 +155,7 @@ object VariableSelection {
       sumThetajk = 0.0
     }
     finalCoefs:= thetaCoefs *:* indicators
-    (mat_mt, alphaCoefs, betaCoefs, thetaCoefs, indicators, finalCoefs)
+    (mat_mt, mat_taus, alphaCoefs, betaCoefs, thetaCoefs, indicators, finalCoefs)
   }
 
   /**
@@ -283,7 +288,7 @@ object VariableSelection {
     val structure = new DVStructure(y, alpha, beta)
 
     // Parameters
-    val noOfIters = 10
+    val noOfIters = 100
     val thin = 1
     val aPrior = 1
     val bPrior = 0.0001
@@ -298,7 +303,7 @@ object VariableSelection {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
 
-    val (test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) =
+    val (muTau_est, taus_est, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) =
       time(
         variableSelection(
           noOfIters,
@@ -321,7 +326,8 @@ object VariableSelection {
           p)
       )
 
-    val mt = mean(test_mtInter(*, ::)).t
+    val mtEstim = mean(muTau_est(*, ::)).t
+    val tausEstim = mean(taus_est(*, ::)).t
     val alphaEstim = mean(alpha_estInter(*, ::)).t
     val betaEstim = mean(beta_estInter(*, ::)).t
     val thetaEstim = mean(theta_est(*, ::)).t
@@ -329,12 +335,16 @@ object VariableSelection {
     val interactionCoefs = mean(interacs_est(*, ::)).t
 
     // Save the results to a csv file
-    val mergedMatrix = DenseMatrix.vertcat(test_mtInter, alpha_estInter, beta_estInter, interacs_est, indics_est)
-    val outputFIle = new File("./071218rerun.csv")
+    val mergedMatrix = DenseMatrix.vertcat(muTau_est, taus_est, alpha_estInter, beta_estInter, interacs_est, indics_est)
+    val outputFIle = new File("./07121810mrerun.csv")
     breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
 
+
     println("Results: ")
-    println("mu and tau:" + mt)
+    println("iterations: " + noOfIters)
+    println("thin: " + thin)
+    println("mu and tau:" + mtEstim)
+    println("tauAlpha, tauBeta and tauTheta: " + tausEstim)
     println("Estimates for alpha: " + alphaEstim)
     println("Estimates for beta: " + betaEstim)
     println("Estimates for thetas: " + thetaEstim)
@@ -342,7 +352,7 @@ object VariableSelection {
     println("Estimates for interaction coefficients: " + interactionCoefs)
 
 //    //Plot Results
-//    val resMatR = DenseMatrix.horzcat(test_mtInter, alpha_estInter, beta_estInter, theta_est, indics_est)
+//    val resMatR = DenseMatrix.horzcat(muTau_est, alpha_estInter, beta_estInter, theta_est, indics_est)
 //    val plotR = new PlotResults
 //    plotR.plotResults(resMatR, List("Mean", "tau", "alpha 1", "alpha 2", "alpha 3", "beta 1", "beta 2", "beta 3", "beta 4", "a1-b1", "a1-b2", "a1-b3", "a4-b4", "a2-b1", "a2-b2", "a2-b3", "a2-b4", "a3-b1", "a3-b2", "a3-b3", "a3-b4", "Indic a1-b1", "Indic a1-b2", "Indic a1-b3", "Indic a4-b4", "Indic a2-b1", "Indic a2-b2", "Indic a2-b3", "Indic a2-b4", "Indic a3-b1", "Indic a3-b2", "Indic a3-b3", "Indic a3-b4"))
   }
