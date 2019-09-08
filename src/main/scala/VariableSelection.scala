@@ -172,9 +172,10 @@ object VariableSelection {
   def sumBetaEffGivenAlpha(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
     val N = y.length
     var sum = 0.0
+      val alphaToCompare = alphaIndex + 1
     for (i <- 0 until N) {
       // Run through all the observations
-      if (alpha(i) == alphaIndex + 1) {
+        if (alpha(i) == alphaToCompare) {
         // if alpha of the current observation == current alphaIndex [+1 because of the difference in the dataset notation (alpha=1,2,...) and Scala indexing that starts from 0]
         sum = sum + betaEff(beta(i) - 1) // add to the sum the current effect of the observation's beta (-1 for consistency with the Scala vector indexing again)
       }
@@ -188,8 +189,9 @@ object VariableSelection {
   def sumAlphaGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
     val N = y.length
     var sum = 0.0
+      val betaToCompare = betaIndex + 1
     for (i <- 0 until N) {
-      if (beta(i) == betaIndex + 1) {
+        if (beta(i) == betaToCompare) {
         sum = sum + alphaEff((alpha(i) - 1))
       }
     }
@@ -229,9 +231,12 @@ object VariableSelection {
     */
   def sumInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
+      val alphaToCompare = alphaIndex + 1
+      val betaToCompare = betaIndex + 1
+
     for (i <- 0 until y.length) {
-      if ((alpha(i) == alphaIndex + 1) && (beta(i) == betaIndex + 1)) {
-        sum = sum + indics((alpha(i) - 1), (beta(i) - 1)) * interEff((alpha(i) - 1), (beta(i) - 1))
+        if ((alpha(i) == alphaToCompare) && (beta(i) == betaToCompare)) {
+          sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
     sum
@@ -243,9 +248,11 @@ object VariableSelection {
   def sumInterEffGivenAlpha(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val N = y.length
     var sum = 0.0
+      val alphaToCompare = alphaIndex + 1
     for (i <- 0 until N) {
-      if ((alpha(i) == alphaIndex + 1)) {
-        sum = sum + indics((alpha(i) - 1), (beta(i) - 1)) * interEff((alpha(i) - 1), (beta(i) - 1))
+        if ((alpha(i) == alphaToCompare)) {
+          val betaIndex = beta(i) - 1
+          sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
     sum
@@ -256,9 +263,11 @@ object VariableSelection {
     */
   def sumInterEffGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
+      val betaToCompare = betaIndex + 1
     for (i <- 0 until y.length) {
-      if ((beta(i) == betaIndex + 1)) {
-        sum = sum + indics((alpha(i) - 1), (beta(i) - 1)) * interEff((alpha(i) - 1), (beta(i) - 1))
+        if ((beta(i) == betaToCompare)) {
+          val alphaIndex = alpha(i) - 1
+          sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
     sum
@@ -287,6 +296,9 @@ object VariableSelection {
   }
 
   def main(args: Array[String]): Unit = {
+      //stop execution until press enter
+      readLine()
+
     // Read the data
     val data = csvread(new File("/home/antonia/ResultsFromCloud/071218/071218.csv"))
     val sampleSize = data.rows
