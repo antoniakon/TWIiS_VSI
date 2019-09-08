@@ -62,6 +62,7 @@ object VariableSelection {
     includedInters(0) = curCount(0)
 
     for (i <- 1 until noOfIter) {
+        println(i)
       for (j <- 0 until structure.nj) {
         sumaj = sumaj + pow((curAlpha(j) - alphaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of alpha
       }
@@ -77,11 +78,8 @@ object VariableSelection {
       }
 
       tauAlpha = breeze.stats.distributions.Gamma(aPrior + structure.nj / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
-      //println("tauA: " + tauAlpha)
       tauBeta = breeze.stats.distributions.Gamma(aPrior + structure.nk / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
-      //println("tauB: " +tauBeta)
       tauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
-      //println("tauTheta: " +tauTheta)
 
       //Update mu and tau
       val varMu = 1.0 / (tau0 + N * tau) //the variance for mu
@@ -290,7 +288,7 @@ object VariableSelection {
 
   def main(args: Array[String]): Unit = {
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromBessel/071218/071218.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/071218/071218.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val alpha = data(::, 1).map(_.toInt)
@@ -298,8 +296,8 @@ object VariableSelection {
     val structure = new DVStructure(y, alpha, beta)
 
     // Parameters
-    val noOfIters = 100
-    val thin = 1
+    val noOfIters = 10000
+    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
