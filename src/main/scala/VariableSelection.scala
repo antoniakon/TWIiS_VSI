@@ -230,7 +230,7 @@ object VariableSelection {
   def sumInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
     for (i <- 0 until y.length) {
-      if ((alpha(i) == alphaIndex + 1) & (beta(i) == betaIndex + 1)) {
+      if ((alpha(i) == alphaIndex + 1) && (beta(i) == betaIndex + 1)) {
         sum = sum + indics((alpha(i) - 1), (beta(i) - 1)) * interEff((alpha(i) - 1), (beta(i) - 1))
       }
     }
