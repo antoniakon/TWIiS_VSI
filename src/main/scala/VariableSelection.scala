@@ -26,6 +26,7 @@ object VariableSelection {
     val thetaCoefs = new DenseMatrix[Double](njk, sampleNo) // To store the coefficients for the interactions, variable theta
     val indicators = new DenseMatrix[Double](njk, sampleNo) // To store the indicator variables I
     val finalCoefs= new DenseMatrix[Double](njk, sampleNo) // To store the product of the indicator variables and the estimated coefficient
+    val includedInters = new DenseVector[Double](sampleNo) // To store the number of the included interactions at each iteration
 
     val SumX = y.toArray.sum // Sum of the values of all the observations
 
@@ -33,6 +34,7 @@ object VariableSelection {
     val curBeta = DenseVector.zeros[Double](structure.nk)
     val curTheta = DenseMatrix.zeros[Double](structure.nj, structure.nk)
     val curIndics = DenseMatrix.zeros[Double](structure.nj, structure.nk)
+    val curCount = Array(0.0)
 
     var mu = 0.0 // Initialise the sampler at mu=0
     var tau = 1.0 // Initialise the sampler at tau=1.0
@@ -47,6 +49,8 @@ object VariableSelection {
 
     var ind = 0 //index used for thinning
 
+
+
     //Start the Gibbs sampler from 0s. Initialise with 0 in the first row the matrices where we will store the sampled values.
     mat_mt(::,0) := DenseVector(mu, tau)
     mat_taus(::,0) := DenseVector(tauAlpha, tauBeta, tauTheta)
@@ -55,6 +59,7 @@ object VariableSelection {
     thetaCoefs(::,0) := curTheta.toDenseVector
     indicators(::,0) := curIndics.toDenseVector
     finalCoefs(::,0) := thetaCoefs(::,0) *:* indicators(::,0)
+    includedInters(0) = curCount(0)
 
     for (i <- 1 until noOfIter) {
       for (j <- 0 until structure.nj) {
@@ -107,6 +112,7 @@ object VariableSelection {
       }
 
       // Update Indicators and Interaction terms
+      var count = 0.0
       for (j <- 0 until structure.nj) {
         for (k <- 0 until structure.nk) {
           val Njk = structure.getDVList(j, k).length // the number of the observations that have alpha==j and beta==k
@@ -127,6 +133,7 @@ object VariableSelection {
           if (newProb0 < u) {
             //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
             curIndics(j, k) = 1.0
+            count += 1.0
             val varPInter = 1.0 / (tauTheta + tau * Njk) //the variance for gammajk
             val meanPInter = (thetaPriorMean * tauTheta + tau * (SXjk - Njk * (mu + curAlpha(j) + curBeta(k)))) * varPInter
             curTheta(j, k) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
@@ -138,6 +145,8 @@ object VariableSelection {
           }
         }
       }
+      curCount(0)= count
+
       // Thinning
       if ((i % thin).equals(0)) {
         ind = ind + 1
@@ -148,6 +157,7 @@ object VariableSelection {
         thetaCoefs(::, ind) := curTheta.toDenseVector
         indicators(::, ind) := curIndics.toDenseVector
         finalCoefs(::, ind):= thetaCoefs(::, ind) *:* indicators(::, ind)
+        includedInters(ind) = curCount(0)
       }
 
       sumaj = 0.0
@@ -155,7 +165,7 @@ object VariableSelection {
       sumThetajk = 0.0
     }
     finalCoefs:= thetaCoefs *:* indicators
-    (mat_mt, mat_taus, alphaCoefs, betaCoefs, thetaCoefs, indicators, finalCoefs)
+    (mat_mt, mat_taus, alphaCoefs, betaCoefs, thetaCoefs, indicators, finalCoefs, includedInters)
   }
 
   /**
@@ -303,7 +313,7 @@ object VariableSelection {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
 
-    val (muTau_est, taus_est, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est) =
+    val (muTau_est, taus_est, alpha_estInter, beta_estInter, theta_est, indics_est, interacs_est, included_est) =
       time(
         variableSelection(
           noOfIters,
@@ -335,8 +345,9 @@ object VariableSelection {
     val interactionCoefs = mean(interacs_est(*, ::)).t
 
     // Save the results to a csv file
-    val mergedMatrix = DenseMatrix.vertcat(muTau_est, taus_est, alpha_estInter, beta_estInter, interacs_est, indics_est)
-    val outputFIle = new File("./07121810mrerun.csv")
+    val includedM= included_est.toDenseMatrix
+    val mergedMatrix = DenseMatrix.vertcat(muTau_est, taus_est, alpha_estInter, beta_estInter, interacs_est, indics_est,includedM)
+    val outputFIle = new File("/home/antonia/Desktop/try.csv")
     breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
 
 
