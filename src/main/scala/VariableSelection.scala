@@ -62,7 +62,7 @@ object VariableSelection {
     includedInters(0) = curCount(0)
 
     for (i <- 1 until noOfIter) {
-        println(i)
+      println(i)
       for (j <- 0 until structure.nj) {
         sumaj = sumaj + pow((curAlpha(j) - alphaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of alpha
       }
@@ -174,9 +174,9 @@ object VariableSelection {
     var sum = 0.0
     for (i <- 0 until N) {
       // Run through all the observations
-        if (alpha(i) == alphaIndex) {
+      if (alpha(i) == alphaIndex) {
         // if alpha of the current observation == current alphaIndex [+1 because of the difference in the dataset notation (alpha=1,2,...) and Scala indexing that starts from 0]
-        sum = sum + betaEff(beta(i)) // add to the sum the current effect of the observation's beta
+        sum += betaEff(beta(i)) // add to the sum the current effect of the observation's beta
       }
     }
     sum
@@ -189,7 +189,7 @@ object VariableSelection {
     val N = y.length
     var sum = 0.0
     for (i <- 0 until N) {
-        if (beta(i) == betaIndex) {
+      if (beta(i) == betaIndex) {
         sum = sum + alphaEff((alpha(i)))
       }
     }
@@ -206,18 +206,19 @@ object VariableSelection {
     // For alpha effects
     for (i <- 0 until nk) {
       //through all beta effects
-      sumAlpha = sumAlpha + sumAlphaGivenBeta(y, alpha, beta, i, alphaEff)
+      sumAlpha += sumAlphaGivenBeta(y, alpha, beta, i, alphaEff)
     }
-    sum
+
     // For beta effects
     for (i <- 0 until nj) {
       //through all alpha effects
-      sumBeta = sumBeta + sumBetaEffGivenAlpha(y, alpha, beta, i, betaEff)
+      sumBeta += sumBetaEffGivenAlpha(y, alpha, beta, i, betaEff)
     }
+
     // For Interaction effects
     for (i <- 0 until nj) {
       for (j <- 0 until nk) {
-        sumInter = sumInter + sumInterEff(y, alpha, beta, i, j, interEff, indics)
+        sumInter += sumInterEff(y, alpha, beta, i, j, interEff, indics)
       }
     }
     sumAlpha + sumBeta + sumInter
@@ -229,8 +230,8 @@ object VariableSelection {
   def sumInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
     for (i <- 0 until y.length) {
-        if ((alpha(i) == alphaIndex) && (beta(i) == betaIndex)) {
-          sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
+      if ((alpha(i) == alphaIndex) && (beta(i) == betaIndex)) {
+        sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
     sum
@@ -243,9 +244,9 @@ object VariableSelection {
     val N = y.length
     var sum = 0.0
     for (i <- 0 until N) {
-        if ((alpha(i) == alphaIndex)) {
-          val betaIndex = beta(i)
-          sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
+      if ((alpha(i) == alphaIndex)) {
+        val betaIndex = beta(i)
+        sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
     sum
@@ -257,9 +258,9 @@ object VariableSelection {
   def sumInterEffGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
     for (i <- 0 until y.length) {
-        if ((beta(i) == betaIndex)) {
-          val alphaIndex = alpha(i)
-          sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
+      if ((beta(i) == betaIndex)) {
+        val alphaIndex = alpha(i)
+        sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
     sum
@@ -288,8 +289,8 @@ object VariableSelection {
   }
 
   def main(args: Array[String]): Unit = {
-      //stop execution until press enter
-      readLine()
+    //stop execution until press enter
+    readLine()
 
     // Read the data
     val data = csvread(new File("/home/antonia/ResultsFromCloud/071218/071218.csv"))
@@ -364,10 +365,10 @@ object VariableSelection {
     println("Estimates for indicators: " + indicsEstim)
     println("Estimates for interaction coefficients: " + interactionCoefs)
 
-//    //Plot Results
-//    val resMatR = DenseMatrix.horzcat(muTau_est, alpha_estInter, beta_estInter, theta_est, indics_est)
-//    val plotR = new PlotResults
-//    plotR.plotResults(resMatR, List("Mean", "tau", "alpha 1", "alpha 2", "alpha 3", "beta 1", "beta 2", "beta 3", "beta 4", "a1-b1", "a1-b2", "a1-b3", "a4-b4", "a2-b1", "a2-b2", "a2-b3", "a2-b4", "a3-b1", "a3-b2", "a3-b3", "a3-b4", "Indic a1-b1", "Indic a1-b2", "Indic a1-b3", "Indic a4-b4", "Indic a2-b1", "Indic a2-b2", "Indic a2-b3", "Indic a2-b4", "Indic a3-b1", "Indic a3-b2", "Indic a3-b3", "Indic a3-b4"))
+    //    //Plot Results
+    //    val resMatR = DenseMatrix.horzcat(muTau_est, alpha_estInter, beta_estInter, theta_est, indics_est)
+    //    val plotR = new PlotResults
+    //    plotR.plotResults(resMatR, List("Mean", "tau", "alpha 1", "alpha 2", "alpha 3", "beta 1", "beta 2", "beta 3", "beta 4", "a1-b1", "a1-b2", "a1-b3", "a4-b4", "a2-b1", "a2-b2", "a2-b3", "a2-b4", "a3-b1", "a3-b2", "a3-b3", "a3-b4", "Indic a1-b1", "Indic a1-b2", "Indic a1-b3", "Indic a4-b4", "Indic a2-b1", "Indic a2-b2", "Indic a2-b3", "Indic a2-b4", "Indic a3-b1", "Indic a3-b2", "Indic a3-b3", "Indic a3-b4"))
   }
 
 }
