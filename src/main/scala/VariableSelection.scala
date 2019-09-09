@@ -83,7 +83,7 @@ object VariableSelection {
 
       //Update mu and tau
       val varMu = 1.0 / (tau0 + N * tau) //the variance for mu
-      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, curAlpha, curBeta, alphaLevels, betaLevels, curTheta, curIndics))) * varMu
+      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, structure, curAlpha, curBeta, alphaLevels, betaLevels, curTheta, curIndics))) * varMu
       mu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
       tau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(y, alpha, beta, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
 
@@ -199,7 +199,7 @@ object VariableSelection {
   /**
     * Calculate the sum of all the alpha and all the beta effects for all the observations.
     */
-  def sumAllMainInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumAllMainInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sumBeta = 0.0
     var sumAlpha = 0.0
     var sumInter = 0.0
@@ -218,7 +218,8 @@ object VariableSelection {
     // For Interaction effects
     for (i <- 0 until nj) {
       for (j <- 0 until nk) {
-        sumInter += sumInterEff(y, alpha, beta, i, j, interEff, indics)
+        //sumInter += sumInterEff(y, alpha, beta, i, j, interEff, indics)
+        sumInter += sumInterEffWithDVStructure(y, alpha, beta, structure, i, j, interEff, indics)
       }
     }
     sumAlpha + sumBeta + sumInter
@@ -234,6 +235,14 @@ object VariableSelection {
         sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
+    sum
+  }
+  /**
+    * Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
+    */
+  def sumInterEffWithDVStructure(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], structure: DVStructure, alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    val noOfElements = structure.getDVList(alphaIndex, betaIndex).length
+    val sum = noOfElements*indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
     sum
   }
 
