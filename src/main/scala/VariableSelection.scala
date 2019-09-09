@@ -17,12 +17,14 @@ object VariableSelection {
 
     val N = y.length // Number of observations
     val sampleNo = noOfIter / thin + 1 // Number of samples created from the MCMC
-    val njk = structure.nj * structure.nk // Number of levels of interactions
+    val alphaLevels= structure.nj
+    val betaLevels = structure.nk
+    val njk = alphaLevels * betaLevels // Number of levels of interactions
 
     val mat_mt = new DenseMatrix[Double](2, sampleNo) // To store mu and tau
     val mat_taus = new DenseMatrix[Double](3, sampleNo) // To store tau_alpha, tau_beta, tau_theta
-    val alphaCoefs = new DenseMatrix[Double](structure.nj, sampleNo) // To store the coefficients for variable alpha
-    val betaCoefs = new DenseMatrix[Double](structure.nk, sampleNo) // To store the coefficients for variable beta
+    val alphaCoefs = new DenseMatrix[Double](alphaLevels, sampleNo) // To store the coefficients for variable alpha
+    val betaCoefs = new DenseMatrix[Double](betaLevels, sampleNo) // To store the coefficients for variable beta
     val thetaCoefs = new DenseMatrix[Double](njk, sampleNo) // To store the coefficients for the interactions, variable theta
     val indicators = new DenseMatrix[Double](njk, sampleNo) // To store the indicator variables I
     val finalCoefs= new DenseMatrix[Double](njk, sampleNo) // To store the product of the indicator variables and the estimated coefficient
@@ -30,10 +32,10 @@ object VariableSelection {
 
     val SumX = y.toArray.sum // Sum of the values of all the observations
 
-    val curAlpha = DenseVector.zeros[Double](structure.nj) // Current values of the coefficients for every iteration. Initialised with 0.
-    val curBeta = DenseVector.zeros[Double](structure.nk)
-    val curTheta = DenseMatrix.zeros[Double](structure.nj, structure.nk)
-    val curIndics = DenseMatrix.zeros[Double](structure.nj, structure.nk)
+    val curAlpha = DenseVector.zeros[Double](alphaLevels) // Current values of the coefficients for every iteration. Initialised with 0.
+    val curBeta = DenseVector.zeros[Double](betaLevels)
+    val curTheta = DenseMatrix.zeros[Double](alphaLevels, betaLevels)
+    val curIndics = DenseMatrix.zeros[Double](alphaLevels, betaLevels)
     val curCount = Array(0.0)
 
     var mu = 0.0 // Initialise the sampler at mu=0
@@ -49,8 +51,6 @@ object VariableSelection {
 
     var ind = 0 //index used for thinning
 
-
-
     //Start the Gibbs sampler from 0s. Initialise with 0 in the first row the matrices where we will store the sampled values.
     mat_mt(::,0) := DenseVector(mu, tau)
     mat_taus(::,0) := DenseVector(tauAlpha, tauBeta, tauTheta)
@@ -63,32 +63,32 @@ object VariableSelection {
 
     for (i <- 1 until noOfIter) {
       println(i)
-      for (j <- 0 until structure.nj) {
+      for (j <- 0 until alphaLevels) {
         sumaj = sumaj + pow((curAlpha(j) - alphaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of alpha
       }
 
-      for (k <- 0 until structure.nk) {
+      for (k <- 0 until betaLevels) {
         sumbk = sumbk + pow((curBeta(k) - betaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of beta
       }
 
-      for (j <- 0 until structure.nj) {
-        for (k <- 0 until structure.nk) {
+      for (j <- 0 until alphaLevels) {
+        for (k <- 0 until betaLevels) {
           sumThetajk = sumThetajk + pow((curTheta(j, k) - thetaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
         }
       }
 
-      tauAlpha = breeze.stats.distributions.Gamma(aPrior + structure.nj / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
-      tauBeta = breeze.stats.distributions.Gamma(aPrior + structure.nk / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
+      tauAlpha = breeze.stats.distributions.Gamma(aPrior + alphaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
+      tauBeta = breeze.stats.distributions.Gamma(aPrior + betaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
       tauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
       //Update mu and tau
       val varMu = 1.0 / (tau0 + N * tau) //the variance for mu
-      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, curAlpha, curBeta, structure.nj, structure.nk, curTheta, curIndics))) * varMu
+      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, curAlpha, curBeta, alphaLevels, betaLevels, curTheta, curIndics))) * varMu
       mu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
       tau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(y, alpha, beta, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
 
       // Update alphaj
-      for (j <- 0 until structure.nj) {
+      for (j <- 0 until alphaLevels) {
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
         val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
         val SumBeta = sumBetaEffGivenAlpha(y, alpha, beta, j, curBeta) //the sum of the beta effects given alpha
@@ -99,7 +99,7 @@ object VariableSelection {
       }
 
       // Update betak
-      for (k <- 0 until structure.nk) {
+      for (k <- 0 until betaLevels) {
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
         val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
         val SumAlpha = sumAlphaGivenBeta(y, alpha, beta, k, curAlpha) //the sum of the alpha effects given beta
@@ -111,8 +111,8 @@ object VariableSelection {
 
       // Update Indicators and Interaction terms
       var count = 0.0
-      for (j <- 0 until structure.nj) {
-        for (k <- 0 until structure.nk) {
+      for (j <- 0 until alphaLevels) {
+        for (k <- 0 until betaLevels) {
           val Njk = structure.getDVList(j, k).length // the number of the observations that have alpha==j and beta==k
           val SXjk = structure.getDVList(j, k).sum // the sum of the observations that have alpha==j and beta==k
 
