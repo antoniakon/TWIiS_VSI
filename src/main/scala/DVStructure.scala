@@ -23,7 +23,7 @@ class DVStructure(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVe
       }
     }
     for (i <- 0 until y.length) {
-      myStructure(alpha(i)-1)(beta(i)-1).addItem(y(i))
+      myStructure(alpha(i))(beta(i)).addItem(y(i))
     }
   }
 

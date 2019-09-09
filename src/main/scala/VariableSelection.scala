@@ -172,12 +172,11 @@ object VariableSelection {
   def sumBetaEffGivenAlpha(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
     val N = y.length
     var sum = 0.0
-      val alphaToCompare = alphaIndex + 1
     for (i <- 0 until N) {
       // Run through all the observations
-        if (alpha(i) == alphaToCompare) {
+        if (alpha(i) == alphaIndex) {
         // if alpha of the current observation == current alphaIndex [+1 because of the difference in the dataset notation (alpha=1,2,...) and Scala indexing that starts from 0]
-        sum = sum + betaEff(beta(i) - 1) // add to the sum the current effect of the observation's beta (-1 for consistency with the Scala vector indexing again)
+        sum = sum + betaEff(beta(i)) // add to the sum the current effect of the observation's beta
       }
     }
     sum
@@ -189,10 +188,9 @@ object VariableSelection {
   def sumAlphaGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
     val N = y.length
     var sum = 0.0
-      val betaToCompare = betaIndex + 1
     for (i <- 0 until N) {
-        if (beta(i) == betaToCompare) {
-        sum = sum + alphaEff((alpha(i) - 1))
+        if (beta(i) == betaIndex) {
+        sum = sum + alphaEff((alpha(i)))
       }
     }
     sum
@@ -222,7 +220,6 @@ object VariableSelection {
         sumInter = sumInter + sumInterEff(y, alpha, beta, i, j, interEff, indics)
       }
     }
-
     sumAlpha + sumBeta + sumInter
   }
 
@@ -231,11 +228,8 @@ object VariableSelection {
     */
   def sumInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
-      val alphaToCompare = alphaIndex + 1
-      val betaToCompare = betaIndex + 1
-
     for (i <- 0 until y.length) {
-        if ((alpha(i) == alphaToCompare) && (beta(i) == betaToCompare)) {
+        if ((alpha(i) == alphaIndex) && (beta(i) == betaIndex)) {
           sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
@@ -248,10 +242,9 @@ object VariableSelection {
   def sumInterEffGivenAlpha(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val N = y.length
     var sum = 0.0
-      val alphaToCompare = alphaIndex + 1
     for (i <- 0 until N) {
-        if ((alpha(i) == alphaToCompare)) {
-          val betaIndex = beta(i) - 1
+        if ((alpha(i) == alphaIndex)) {
+          val betaIndex = beta(i)
           sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
@@ -263,10 +256,9 @@ object VariableSelection {
     */
   def sumInterEffGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
-      val betaToCompare = betaIndex + 1
     for (i <- 0 until y.length) {
-        if ((beta(i) == betaToCompare)) {
-          val alphaIndex = alpha(i) - 1
+        if ((beta(i) == betaIndex)) {
+          val alphaIndex = alpha(i)
           sum = sum + indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
       }
     }
@@ -280,7 +272,7 @@ object VariableSelection {
     val N = y.length
     val YminusMuNatUniEff = DenseVector.zeros[Double](N)
     for (i <- 0 until N) {
-      YminusMuNatUniEff(i) = y(i) - mu - alphaEff(alpha(i) - 1) - betaEff(beta(i) - 1) - indics(alpha(i) - 1, beta(i) - 1) * interEff(alpha(i) - 1, beta(i) - 1)
+      YminusMuNatUniEff(i) = y(i) - mu - alphaEff(alpha(i)) - betaEff(beta(i)) - indics(alpha(i), beta(i)) * interEff(alpha(i) , beta(i))
     }
     sqr(YminusMuNatUniEff).toArray.sum
   }
@@ -303,8 +295,8 @@ object VariableSelection {
     val data = csvread(new File("/home/antonia/ResultsFromCloud/071218/071218.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
-    val alpha = data(::, 1).map(_.toInt)
-    val beta = data(::, 2).map(_.toInt)
+    val alpha = data(::, 1).map(_.toInt).map(x=>x-1)
+    val beta = data(::, 2).map(_.toInt).map(x=>x-1)
     val structure = new DVStructure(y, alpha, beta)
 
     // Parameters
