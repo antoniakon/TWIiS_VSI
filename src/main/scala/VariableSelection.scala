@@ -4,6 +4,8 @@ import breeze.linalg.{*, _}
 import breeze.numerics._
 import breeze.stats.mean
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * Created by Antonia Kontaratou.
   * Variable selection for interaction terms. Assume that all the main effects are present, otherwise you end up with a model containing an interaction involving a variable for which there is no main effect.
@@ -13,9 +15,8 @@ import breeze.stats.mean
 
 object VariableSelection {
 
-  def variableSelection(noOfIter: Int, thin: Int, y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], structure: DVStructure, alphaPriorMean: Double, alphaPriorVar: Double, betaPriorMean: Double, betaPriorVar: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
+  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaPriorMean: Double,  betaPriorMean: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
 
-    val N = y.length // Number of observations
     val sampleNo = noOfIter / thin + 1 // Number of samples created from the MCMC
     val alphaLevels= structure.nj
     val betaLevels = structure.nk
@@ -29,8 +30,6 @@ object VariableSelection {
     val indicators = new DenseMatrix[Double](njk, sampleNo) // To store the indicator variables I
     val finalCoefs= new DenseMatrix[Double](njk, sampleNo) // To store the product of the indicator variables and the estimated coefficient
     val includedInters = new DenseVector[Double](sampleNo) // To store the number of the included interactions at each iteration
-
-    val SumX = y.toArray.sum // Sum of the values of all the observations
 
     val curAlpha = DenseVector.zeros[Double](alphaLevels) // Current values of the coefficients for every iteration. Initialised with 0.
     val curBeta = DenseVector.zeros[Double](betaLevels)
@@ -83,16 +82,16 @@ object VariableSelection {
 
       //Update mu and tau
       val varMu = 1.0 / (tau0 + N * tau) //the variance for mu
-      val meanMu = (mu0 * tau0 + tau * (SumX - sumAllMainInterEff(y, alpha, beta, structure, curAlpha, curBeta, alphaLevels, betaLevels, curTheta, curIndics))) * varMu
+      val meanMu = (mu0 * tau0 + tau * (SumObs - sumAllMainInterEff(structure, curAlpha, curBeta, alphaLevels, betaLevels, curTheta, curIndics))) * varMu
       mu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
-      tau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(y, alpha, beta, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+      tau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(structure, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
 
       // Update alphaj
       for (j <- 0 until alphaLevels) {
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
         val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
-        val SumBeta = sumBetaEffGivenAlpha(y, alpha, beta, j, curBeta) //the sum of the beta effects given alpha
-        val SinterAlpha = sumInterEffGivenAlpha(y, alpha, beta, j, curTheta, curIndics) //the sum of the gamma/interaction effects given alpha
+        val SumBeta = sumBetaEffGivenAlpha(structure, j, curBeta) //the sum of the beta effects given alpha
+        val SinterAlpha = sumInterEffGivenAlpha(structure, j, curTheta, curIndics) //the sum of the gamma/interaction effects given alpha
         val varPalpha = 1.0 / (tauAlpha + tau * Nj) //the variance for alphaj
         val meanPalpha = (alphaPriorMean * tauAlpha + tau * (SXalphaj - Nj * mu - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
         curAlpha(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
@@ -102,8 +101,8 @@ object VariableSelection {
       for (k <- 0 until betaLevels) {
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
         val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
-        val SumAlpha = sumAlphaGivenBeta(y, alpha, beta, k, curAlpha) //the sum of the alpha effects given beta
-        val SinterBeta = sumInterEffGivenBeta(y, alpha, beta, k, curTheta, curIndics) //the sum of the gamma/interaction effects given beta
+        val SumAlpha = sumAlphaGivenBeta(structure, k, curAlpha)//the sum of the alpha effects given beta
+        val SinterBeta = sumInterEffGivenBeta(structure, k, curTheta, curIndics) //the sum of the gamma/interaction effects given beta
         val varPbeta = 1.0 / (tauBeta + tau * Nk) //the variance for betak
         val meanPbeta = (betaPriorMean * tauBeta + tau * (SXbetak - Nk * mu - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
         curBeta(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
@@ -169,15 +168,11 @@ object VariableSelection {
   /**
     * Add all the beta effects for a given alpha.
     */
-  def sumBetaEffGivenAlpha(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
-    val N = y.length
+  def sumBetaEffGivenAlpha(structure: DVStructure, alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
+    val betaLevels = structure.nk
     var sum = 0.0
-    for (i <- 0 until N) {
-      // Run through all the observations
-      if (alpha(i) == alphaIndex) {
-        // if alpha of the current observation == current alphaIndex [+1 because of the difference in the dataset notation (alpha=1,2,...) and Scala indexing that starts from 0]
-        sum += betaEff(beta(i)) // add to the sum the current effect of the observation's beta
-      }
+    for (ibeta <- 0 until betaLevels) {
+      sum += (structure.getDVList(alphaIndex,ibeta).length)*betaEff(ibeta)
     }
     sum
   }
@@ -185,62 +180,46 @@ object VariableSelection {
   /**
     * Add all the alpha effects for a given beta.
     */
-  def sumAlphaGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
-    val N = y.length
+  def sumAlphaGivenBeta(structure: DVStructure, betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
+    val alphaLevels = structure.nj
     var sum = 0.0
-    for (i <- 0 until N) {
-      if (beta(i) == betaIndex) {
-        sum = sum + alphaEff((alpha(i)))
-      }
+    for (ialpha <- 0 until alphaLevels) {
+      sum += (structure.getDVList(ialpha,betaIndex).length)*alphaEff(ialpha)
     }
     sum
   }
-
   /**
     * Calculate the sum of all the alpha and all the beta effects for all the observations.
     */
-  def sumAllMainInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sumBeta = 0.0
     var sumAlpha = 0.0
     var sumInter = 0.0
     // For alpha effects
     for (i <- 0 until nk) {
       //through all beta effects
-      sumAlpha += sumAlphaGivenBeta(y, alpha, beta, i, alphaEff)
+      sumAlpha += sumAlphaGivenBeta(structure, i, alphaEff)
     }
 
     // For beta effects
     for (i <- 0 until nj) {
       //through all alpha effects
-      sumBeta += sumBetaEffGivenAlpha(y, alpha, beta, i, betaEff)
+      sumBeta += sumBetaEffGivenAlpha(structure, i, betaEff)
     }
 
     // For Interaction effects
     for (i <- 0 until nj) {
       for (j <- 0 until nk) {
-        //sumInter += sumInterEff(y, alpha, beta, i, j, interEff, indics)
-        sumInter += sumInterEffWithDVStructure(y, alpha, beta, structure, i, j, interEff, indics)
+        sumInter += sumInterEff(structure, i, j, interEff, indics)
       }
     }
     sumAlpha + sumBeta + sumInter
   }
 
   /**
-    * Add all the interaction effects for a given alpha and a given beta.
-    */
-  def sumInterEff(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    var sum = 0.0
-    for (i <- 0 until y.length) {
-      if ((alpha(i) == alphaIndex) && (beta(i) == betaIndex)) {
-        sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
-      }
-    }
-    sum
-  }
-  /**
     * Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
     */
-  def sumInterEffWithDVStructure(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], structure: DVStructure, alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEff(structure: DVStructure, alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val noOfElements = structure.getDVList(alphaIndex, betaIndex).length
     val sum = noOfElements*indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
     sum
@@ -249,14 +228,11 @@ object VariableSelection {
   /**
     * Add all the interaction effects for a given alpha.
     */
-  def sumInterEffGivenAlpha(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    val N = y.length
+  def sumInterEffGivenAlpha(structure: DVStructure, alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    val betaLevels = structure.nk
     var sum = 0.0
-    for (i <- 0 until N) {
-      if ((alpha(i) == alphaIndex)) {
-        val betaIndex = beta(i)
-        sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
-      }
+    for (ibeta <- 0 until betaLevels) {
+      sum += structure.getDVList(alphaIndex,ibeta).length * indics(alphaIndex, ibeta) * interEff(alphaIndex, ibeta)
     }
     sum
   }
@@ -264,30 +240,31 @@ object VariableSelection {
   /**
     * Add all the interaction effects for a given beta.
     */
-  def sumInterEffGivenBeta(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEffGivenBeta(structure: DVStructure, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    val alphaLevels = structure.nj
     var sum = 0.0
-    for (i <- 0 until y.length) {
-      if ((beta(i) == betaIndex)) {
-        val alphaIndex = alpha(i)
-        sum += indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
-      }
+    for (ialpha <- 0 until alphaLevels) {
+      sum += structure.getDVList(ialpha,betaIndex).length * indics(ialpha, betaIndex) * interEff(ialpha, betaIndex)
     }
     sum
   }
 
+  def sqr(x:DenseVector[Double]) = x*x
+
   /**
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
-  def YminusMuAndEffects(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int], mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    val N = y.length
-    val YminusMuNatUniEff = DenseVector.zeros[Double](N)
-    for (i <- 0 until N) {
-      YminusMuNatUniEff(i) = y(i) - mu - alphaEff(alpha(i)) - betaEff(beta(i)) - indics(alpha(i), beta(i)) * interEff(alpha(i) , beta(i))
+  def YminusMuAndEffects(structure:DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    val alphaLevels = structure.nj
+    val betaLevels = structure.nk
+    var sum = 0.0
+    for (ialpha <- 0 until alphaLevels) {
+      for (ibeta <-0 until betaLevels){
+        sum += structure.getDVList(ialpha, ibeta).map(x => scala.math.pow(x-mu-alphaEff(ialpha)-betaEff(ibeta)-interEff(ialpha,ibeta)*indics(ialpha,ibeta),2)).reduce((x, y) => x + y)
+      }
     }
-    sqr(YminusMuNatUniEff).toArray.sum
+    sum
   }
-
-  def sqr(x: DenseVector[Double]) = x * x
 
   // Calculation of the execution time
   def time[A](f: => A) = {
@@ -302,22 +279,21 @@ object VariableSelection {
     readLine()
 
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromCloud/071218/071218.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/100919_15x20/Data/simulInter100919.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
+    val sumObs = y.toArray.sum // Sum of the values of all the observations
     val alpha = data(::, 1).map(_.toInt).map(x=>x-1)
     val beta = data(::, 2).map(_.toInt).map(x=>x-1)
     val structure = new DVStructure(y, alpha, beta)
 
     // Parameters
-    val noOfIters = 10000
-    val thin = 10
+    val noOfIters = 100000
+    val thin = 100
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
-    val alphaPriorTau = 0.0001
     val betaPriorMean = 0.0
-    val betaPriorTau = 0.0001
     val mu0 = 0.0
     val tau0 = 0.0001
     val a = 1
@@ -330,14 +306,11 @@ object VariableSelection {
         variableSelection(
           noOfIters,
           thin,
-          y,
-          alpha,
-          beta,
+          sampleSize,
+          sumObs,
           structure,
           alphaPriorMean,
-          alphaPriorTau,
           betaPriorMean,
-          betaPriorTau,
           mu0,
           tau0,
           a,
@@ -356,13 +329,6 @@ object VariableSelection {
     val indicsEstim = mean(indics_est(*, ::)).t
     val interactionCoefs = mean(interacs_est(*, ::)).t
 
-    // Save the results to a csv file
-    val includedM= included_est.toDenseMatrix
-    val mergedMatrix = DenseMatrix.vertcat(muTau_est, taus_est, alpha_estInter, beta_estInter, interacs_est, indics_est,includedM)
-    val outputFIle = new File("/home/antonia/Desktop/try.csv")
-    breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
-
-
     println("Results: ")
     println("iterations: " + noOfIters)
     println("thin: " + thin)
@@ -373,6 +339,13 @@ object VariableSelection {
     println("Estimates for thetas: " + thetaEstim)
     println("Estimates for indicators: " + indicsEstim)
     println("Estimates for interaction coefficients: " + interactionCoefs)
+
+    // Save the results to a csv file
+    val includedM= included_est.toDenseMatrix
+    val mergedMatrix = DenseMatrix.vertcat(muTau_est, taus_est, alpha_estInter, beta_estInter, interacs_est, indics_est,includedM)
+    val outputFIle = new File("/home/antonia/ResultsFromCloud/Report/100919_15x20/Scala/1M/scalaRes1MAfterStr.csv")
+    breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
+
 
     //    //Plot Results
     //    val resMatR = DenseMatrix.horzcat(muTau_est, alpha_estInter, beta_estInter, theta_est, indics_est)

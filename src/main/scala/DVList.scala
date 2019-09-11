@@ -19,6 +19,10 @@ class DVList {
     list.length
   }
 
+  def map(f: Double => Double): ListBuffer[Double]={
+    list.map(f)
+  }
+
   override def toString = {
     sum.toString
   }
