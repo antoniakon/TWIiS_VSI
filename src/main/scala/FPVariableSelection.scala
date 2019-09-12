@@ -151,6 +151,28 @@ object FPVariableSelection {
         curAlpha(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
       }
 
+      //helper function for alpha coeffs
+      def nextAlphaCoefs(alphaCoefsState: alphaCoefsCC, curBeta: DenseVector[Double], curTheta: DenseMatrix[Double], curIndics: DenseMatrix[Double], curmt: DenseVector[Double], curtaus: DenseVector[Double]): alphaCoefsCC={
+        val curAlphaEstim = (DenseVector.zeros[Double](alphaLevels))
+        for (j <- 0 until alphaLevels) {
+          val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
+          val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
+          val SumBeta = sumBetaEffGivenAlpha(structure, j, curBeta) //the sum of the beta effects given alpha
+          val SinterAlpha = sumInterEffGivenAlpha(structure, j, curTheta, curIndics) //the sum of the gamma/interaction effects given alpha
+          val varPalpha = 1.0 / (tauAlpha + tau * Nj) //the variance for alphaj
+          val meanPalpha = (alphaPriorMean * tauAlpha + tau * (SXalphaj - Nj * mu - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
+          curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
+        }
+        alphaCoefsCC(curAlphaEstim::alphaCoefsState.acoefs)
+      }
+
+      val initAlphaCoefs = alphaCoefsCC(List[DenseVector[Double]](DenseVector.zeros(alphaLevels)))
+      val latestAlphaState = nextAlphaCoefs(initAlphaCoefs, curBeta, curTheta, curIndics, latestmtState, latesttausState).acoefs.head
+      println("alpha Coefs")
+      println(latestAlphaState)
+      println(curAlpha.toString())
+
+      
       // Update betak
       for (k <- 0 until betaLevels) {
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
