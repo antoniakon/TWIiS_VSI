@@ -204,7 +204,7 @@ object FPVariableSelection {
       val latestBetaState= nextBetaCoefs(initBetaCoefs, latestAlphaState, curTheta, curIndics, latestmtState, latesttausState).bcoefs.head
       println(latestBetaState)
       println(curBeta.toString())
-      
+
       // Update Indicators and Interaction terms
       var count = 0.0
       for (j <- 0 until alphaLevels) {
@@ -240,6 +240,57 @@ object FPVariableSelection {
         }
       }
       curCount(0)= count
+
+      //Helper function for indicators and interactions
+      def nextIndicsInters(curAlpha: DenseVector[Double], curBeta: DenseVector[Double], curTheta: thetaCoefsCC, curIndics: indicatorsCC, curFinalCoefs: finalCoefsCC, curmt: DenseVector[Double], curtaus: DenseVector[Double]): (thetaCoefsCC, indicatorsCC, finalCoefsCC)= {
+        // Update Indicators and Interaction terms
+        val curIndicsEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
+        val curThetaEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
+        var count = 0.0
+        for (j <- 0 until alphaLevels) {
+          for (k <- 0 until betaLevels) {
+            val Njk = structure.getDVList(j, k).length // the number of the observations that have alpha==j and beta==k
+            val SXjk = structure.getDVList(j, k).sum // the sum of the observations that have alpha==j and beta==k
+
+            var u = breeze.stats.distributions.Uniform(0, 1).draw()
+
+            //log-sum-exp trick
+            val logInitExp = curmt(1) * curTheta.thcoefs.head((j, k)) * (SXjk - Njk * (curmt(0) + curAlpha(j) + curBeta(k) + 0.5 * curTheta.thcoefs.head((j, k))))
+            val logProb0 = log(1.0 - p) //The log of the probability I=0
+            val logProb1 = log(p) + logInitExp //The log of the probability I=1
+            val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
+            val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
+            val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
+            var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
+            val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
+
+            if (newProb0 < u) {
+              //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
+              curIndicsEstim(j, k) = 1.0
+              count += 1.0
+              val varPInter = 1.0 / (curtaus(2) + curmt(1) * Njk) //the variance for gammajk
+              val meanPInter = (thetaPriorMean * curtaus(2) + curmt(1) * (SXjk - Njk * (curmt(0) + curAlpha(j) + curBeta(k)))) * varPInter
+              curThetaEstim(j, k) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+            }
+            else {
+              //Update indicator and current interactions if indicator = 0.0
+              curIndicsEstim(j, k) = 0.0
+              curThetaEstim(j, k) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / curtaus(2))).draw() // sample from the prior of interactions
+            }
+          }
+        }
+        curCount(0) = count
+        (thetaCoefsCC(curThetaEstim::curTheta.thcoefs), indicatorsCC(curIndicsEstim::curIndics.indics), finalCoefsCC(curThetaEstim*:*curIndicsEstim:: curFinalCoefs.finalCoefs))
+      }
+
+      val initIndicsIntersCoefs = (thetaCoefsCC(List[DenseMatrix[Double]](DenseMatrix.zeros(alphaLevels,betaLevels))), indicatorsCC(List[DenseMatrix[Double]](DenseMatrix.zeros(alphaLevels,betaLevels))), finalCoefsCC(List[DenseMatrix[Double]](DenseMatrix.zeros(alphaLevels,betaLevels))))
+      println("Indics, theta, final")
+      val latestIndicsInters = nextIndicsInters(latestAlphaState, latestBetaState, initIndicsIntersCoefs._1, initIndicsIntersCoefs._2, initIndicsIntersCoefs._3, latestmtState, latesttausState)
+      println(curTheta.toString())
+      println(latestIndicsInters._1.toString)
+      println(curIndics.toString())
+      println(latestIndicsInters._2.toString)
+      println(curIndics.toString())
 
       // Thinning
       if ((i % thin).equals(0)) {
