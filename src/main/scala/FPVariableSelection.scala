@@ -95,6 +95,22 @@ object FPVariableSelection {
       mu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
       tau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(structure, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
 
+      //helper function for mu tau
+      def nextmutau(curAlpha: DenseVector[Double], curBeta: DenseVector[Double], curTheta: DenseMatrix[Double], curIndics: DenseMatrix[Double], curmt: muTauCC, curtaus: DenseVector[Double]): muTauCC= {
+        val prevtau=curmt.mt.head(1)
+        val varMu = 1.0 / (tau0 + N * prevtau) //the variance for mu
+        val meanMu = (mu0 * tau0 + prevtau * (SumObs - sumAllMainInterEff(structure, curAlpha, curBeta, alphaLevels, betaLevels, curTheta, curIndics))) * varMu
+        val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
+        val newtau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(structure, mu, curAlpha, curBeta, curTheta, curIndics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+        muTauCC(DenseVector(newmu,newtau)::curmt.mt)
+      }
+
+      val initmt = muTauCC(List[DenseVector[Double]](DenseVector(0.0,1.0)))
+      val latestmtState = nextmutau(curAlpha, curBeta, curTheta, curIndics, initmt, DenseVector(tauAlpha, tauBeta, tauTheta)).mt.head
+      println("mu, tau")
+      println(latestmtState)
+      println(DenseVector(mu,tau).toString())
+
       // Update alphaj
       for (j <- 0 until alphaLevels) {
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
