@@ -111,6 +111,35 @@ object FPVariableSelection {
       println(latestmtState)
       println(DenseVector(mu,tau).toString())
 
+      //helper function for taus
+      def nexttaus(curAlpha: DenseVector[Double] , curBeta: DenseVector[Double], curTheta: DenseMatrix[Double], curIndics: DenseMatrix[Double], curmt: DenseVector[Double], curtaus: tausCC): tausCC= {
+        for (j <- 0 until alphaLevels) {
+          sumaj = sumaj + pow((curAlpha(j) - alphaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of alpha
+        }
+
+        for (k <- 0 until betaLevels) {
+          sumbk = sumbk + pow((curBeta(k) - betaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of beta
+        }
+
+        for (j <- 0 until alphaLevels) {
+          for (k <- 0 until betaLevels) {
+            sumThetajk = sumThetajk + pow((curTheta(j, k) - thetaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
+          }
+        }
+
+        val newtauAlpha = breeze.stats.distributions.Gamma(aPrior + alphaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
+        val newtauBeta = breeze.stats.distributions.Gamma(aPrior + betaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
+        val newtauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
+
+        tausCC(DenseVector(newtauAlpha, newtauBeta, newtauTheta)::curtaus.tauabth)
+      }
+
+      val inittaus = tausCC(List[DenseVector[Double]](DenseVector(1.0,1.0, 1.0)))
+      val latesttausState = nexttaus(curAlpha, curBeta, curTheta, curIndics, latestmtState, inittaus).tauabth.head
+      println("taus")
+      println(latesttausState)
+      println(DenseVector(tauAlpha, tauBeta, tauTheta).toString())
+
       // Update alphaj
       for (j <- 0 until alphaLevels) {
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
