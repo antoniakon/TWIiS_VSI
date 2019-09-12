@@ -172,7 +172,7 @@ object FPVariableSelection {
       println(latestAlphaState)
       println(curAlpha.toString())
 
-      
+
       // Update betak
       for (k <- 0 until betaLevels) {
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
@@ -184,6 +184,27 @@ object FPVariableSelection {
         curBeta(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
       }
 
+      //helper function for beta coeffs
+      def nextBetaCoefs(betaCoefsState: betaCoefsCC, curAlpha: DenseVector[Double], curTheta: DenseMatrix[Double], curIndics: DenseMatrix[Double], curmt: DenseVector[Double], curtaus: DenseVector[Double]): betaCoefsCC={
+        val curBetaEstim = (DenseVector.zeros[Double](betaLevels))
+        for (k <- 0 until betaLevels) {
+          val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
+          val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
+          val SumAlpha = sumAlphaGivenBeta(structure, k, curAlpha)//the sum of the alpha effects given beta
+          val SinterBeta = sumInterEffGivenBeta(structure, k, curTheta, curIndics) //the sum of the gamma/interaction effects given beta
+          val varPbeta = 1.0 / (tauBeta + tau * Nk) //the variance for betak
+          val meanPbeta = (betaPriorMean * tauBeta + tau * (SXbetak - Nk * mu - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
+          curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
+        }
+        betaCoefsCC(curBetaEstim::betaCoefsState.bcoefs)
+      }
+
+      val initBetaCoefs = betaCoefsCC(List[DenseVector[Double]](DenseVector.zeros(betaLevels)))
+      println("Beta Coefs")
+      val latestBetaState= nextBetaCoefs(initBetaCoefs, latestAlphaState, curTheta, curIndics, latestmtState, latesttausState).bcoefs.head
+      println(latestBetaState)
+      println(curBeta.toString())
+      
       // Update Indicators and Interaction terms
       var count = 0.0
       for (j <- 0 until alphaLevels) {
