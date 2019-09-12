@@ -60,6 +60,15 @@ object FPVariableSelection {
     finalCoefs(::,0) := thetaCoefs(::,0) *:* indicators(::,0)
     includedInters(0) = curCount(0)
 
+    //Define case classes
+    case class alphaCoefsCC(acoefs: List[DenseVector[Double]])
+    case class betaCoefsCC(bcoefs: List[DenseVector[Double]])
+    case class thetaCoefsCC(thcoefs: List[DenseMatrix[Double]])
+    case class indicatorsCC(indics: List[DenseMatrix[Double]])
+    case class finalCoefsCC(finalCoefs: List[DenseMatrix[Double]])
+    case class muTauCC(mt: List[DenseVector[Double]])
+    case class tausCC(tauabth: List[DenseVector[Double]])
+
     for (i <- 1 until noOfIter) {
       println(i)
       for (j <- 0 until alphaLevels) {
