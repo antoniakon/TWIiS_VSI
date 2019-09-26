@@ -5,12 +5,11 @@
   * Model: Xijk|mu,aj,bk,gjk,Ijk tau~N(mu+aj+bk+Ijk*gjk,tau^-1)
   */
 import java.io.File
+
 import breeze.linalg.{*, _}
 import breeze.numerics._
 import cats._
 import breeze.stats.mean
-import cats.data.State
-import scala.collection.mutable.ListBuffer
 
 object FPStateMonadVS {
 
@@ -23,8 +22,37 @@ object FPStateMonadVS {
 
     val curCount = Array(0.0)
 
+    implicit def optionMonad(implicit app: Applicative[Option]) =
+      new Monad[Option] {
+        // Define flatMap using Option's flatten method
+        override def flatMap[A, B](fa: Option[A])(f: A => Option[B]): Option[B] =
+          app.map(fa)(f).flatten
+        // Reuse this definition from Applicative.
+        override def pure[A](a: A): Option[A] = app.pure(a)
+
+        @annotation.tailrec
+        def tailRecM[A, B](init: A)(fn: A => Option[Either[A, B]]): Option[B] =
+          fn(init) match {
+            case None => None
+            case Some(Right(b)) => Some(b)
+            case Some(Left(a)) => tailRecM(a)(fn)
+          }
+      }
+
+//    implicit def DVMonad(implicit  dv: DenseVector[Double]) = new Monad[DenseVector] {
+//      override def pure[A](a: A): DenseVector[A] = DenseVector(a)
+//      override def flatMap[A, B](fa: DenseVector[A])(f: A => DenseVector[B]): DenseVector[B] = new DenseVector(fa.map(f).map(i=>i.toArray).toArray.flatten)
+//      @annotation.tailrec
+//      def tailRecM[A, B](init: A)(fn: A => DenseVector[Either[A, B]]): DenseVector[B] = ???
+//        fn(init) match {
+//          case Nil => Nil
+//          case Some(Right(b)) => Some(b)
+//          case Some(Left(a)) => tailRecM(a)(fn)
+//        }
+//    }
     //Define case classes
     case class FullState(acoefs: DenseVector[Double], bcoefs: DenseVector[Double], thcoefs: DenseMatrix[Double], indics: DenseMatrix[Double],finalCoefs: DenseMatrix[Double], mt: DenseVector[Double], tauabth: DenseVector[Double])
+
     case class FullStateList(fstateL: List[FullState])
 
     // Update mu and tau
