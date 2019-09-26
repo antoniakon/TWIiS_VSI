@@ -88,4 +88,12 @@ class DVStructure(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVe
     myStructure(j)(k)
   }
 
+  def foreach[U](f: DVItem => U): Unit = {
+    for (j <- 0 to nj - 1) {
+      for (k <- 0 to nk - 1) {
+        f(new DVItem(j, k, myStructure(j)(k)))
+      }
+    }
+  }
+
 }
