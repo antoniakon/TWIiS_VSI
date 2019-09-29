@@ -13,11 +13,10 @@ import breeze.stats.mean
 
 object FPStateMonadVS {
 
-  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaPriorMean: Double,  betaPriorMean: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
+  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int,
+                        alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
+                        a: Double, b: Double, aPrior: Double, bPrior: Double, p: Double) = {
 
-    val sampleNo = noOfIter / thin + 1 // Number of samples created from the MCMC
-    val alphaLevels= structure.nj
-    val betaLevels = structure.nk
     val njk = alphaLevels * betaLevels // Number of levels of interactions
 
     val curCount = Array(0.0)
@@ -198,10 +197,7 @@ object FPStateMonadVS {
         val latestalphas = nextAlphaCoefs(latesttaus)
         val latestbetas = nextBetaCoefs(latestalphas)
         val latestFullyUpdatedState = nextIndicsInters(latestbetas)
-        println(n)
-        //println(latestFullyUpdatedState)
         if((n % thin).equals(0)) {
-          println("store")
           calculateNewState(n-1, latestFullyUpdatedState, FullStateList(latestFullyUpdatedState::fstateList.fstateL))
         }
         else calculateNewState(n-1, latestFullyUpdatedState, fstateList)
@@ -327,6 +323,8 @@ object FPStateMonadVS {
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
     val structure = new DVStructure(y, alpha, beta)
+    val alphaLevels = alpha.toArray.distinct.length
+    val betaLevels = beta.toArray.distinct.length
 
     // Parameters
     val noOfIters = 100
@@ -345,21 +343,9 @@ object FPStateMonadVS {
     val statesResults =
       time(
         variableSelection(
-          noOfIters,
-          thin,
-          sampleSize,
-          sumObs,
-          structure,
-          alphaPriorMean,
-          betaPriorMean,
-          mu0,
-          tau0,
-          a,
-          b,
-          interPriorMean,
-          aPrior,
-          bPrior,
-          p)
+          noOfIters, thin, sampleSize, sumObs, structure, alphaLevels, betaLevels,
+          alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
+          a, b, aPrior, bPrior, p)
       )
 
     val acoefficients= statesResults.fstateL.map(f=>f.acoefs)

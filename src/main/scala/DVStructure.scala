@@ -8,8 +8,8 @@ import scala.collection.mutable.ListBuffer
   */
 class DVStructure(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int])  {
 
-  val nj = alpha.toArray.distinct.length
-  val nk = beta.toArray.distinct.length
+  private val nj = alpha.toArray.distinct.length
+  private val nk = beta.toArray.distinct.length
   private val myStructure = Array.ofDim[DVList](nj, nk)
   init
 
