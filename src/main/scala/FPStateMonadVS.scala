@@ -273,17 +273,11 @@ object FPStateMonadVS {
     * Add all the interaction effects for a given alpha.
     */
   def sumInterEffGivenAlpha(structure: DVStructure, alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    val betaLevels = structure.nk
+    var sum = 0.0
+    structure.getAllItemsForGivenA(alphaIndex).foreach( item => {
+      sum += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
+    })
 
-    def sumInterEffga(n: Int): Double = {
-      @annotation.tailrec
-      def go(n:Int, sum: Double): Double={
-        if (n<0) sum
-        else go(n-1, sum + structure.getDVList(alphaIndex,n).length * indics(alphaIndex, n) * interEff(alphaIndex, n))
-      }
-      go(n, 0.0)
-    }
-    val sum = sumInterEffga(betaLevels-1)
     sum
   }
 
@@ -291,17 +285,11 @@ object FPStateMonadVS {
     * Add all the interaction effects for a given beta.
     */
   def sumInterEffGivenBeta(structure: DVStructure, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    val alphaLevels = structure.nj
+    var sum = 0.0
+    structure.getAllItemsForGivenB(betaIndex).foreach( item => {
+      sum += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
+    })
 
-    def sumInterEffag(n: Int): Double = {
-      @annotation.tailrec
-      def go(n:Int, sum: Double): Double={
-        if (n<0) sum
-        else go(n-1, sum + structure.getDVList(n,betaIndex).length * indics(n, betaIndex) * interEff(n, betaIndex))
-      }
-      go(n, 0.0)
-    }
-    val sum = sumInterEffag(alphaLevels-1)
     sum
   }
 
