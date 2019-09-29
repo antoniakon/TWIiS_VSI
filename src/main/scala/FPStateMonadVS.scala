@@ -109,8 +109,10 @@ object FPStateMonadVS {
     // Update alpha coefficients
     // helper function for alpha coeffs
     def nextAlphaCoefs(oldfullState: FullState):FullState={
+
       val curAlphaEstim = (DenseVector.zeros[Double](alphaLevels))
-      for (j <- 0 until alphaLevels) {
+      structure.foreach( item => {
+        val j = item.a
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
         val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
         val SumBeta = sumBetaEffGivenAlpha(structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
@@ -118,7 +120,8 @@ object FPStateMonadVS {
         val varPalpha = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
         val meanPalpha = (alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
         curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
-      }
+      })
+
       oldfullState.copy(acoefs = curAlphaEstim)
     }
 
@@ -126,7 +129,8 @@ object FPStateMonadVS {
     // helper function for beta coeffs
     def nextBetaCoefs(oldfullState: FullState):FullState={
       val curBetaEstim = (DenseVector.zeros[Double](betaLevels))
-      for (k <- 0 until betaLevels) {
+      structure.foreach( item => {
+        val k = item.b
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
         val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
         val SumAlpha = sumAlphaGivenBeta(structure, k, oldfullState.acoefs)//the sum of the alpha effects given beta
@@ -134,7 +138,7 @@ object FPStateMonadVS {
         val varPbeta = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Nk) //the variance for betak
         val meanPbeta = (betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
         curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
-      }
+      })
       oldfullState.copy(bcoefs = curBetaEstim)
     }
 
@@ -145,38 +149,39 @@ object FPStateMonadVS {
       val curIndicsEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
       val curThetaEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
       var count = 0.0
-      for (j <- 0 until alphaLevels) {
-        for (k <- 0 until betaLevels) {
-          val Njk = structure.getDVList(j, k).length // the number of the observations that have alpha==j and beta==k
-          val SXjk = structure.getDVList(j, k).sum // the sum of the observations that have alpha==j and beta==k
 
-          val u = breeze.stats.distributions.Uniform(0, 1).draw()
+      structure.foreach( item => {
+        val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
+        val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
 
-          //log-sum-exp trick
-          val logInitExp = oldfullState.mt(1) * oldfullState.thcoefs(j, k) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(j) + oldfullState.bcoefs(k) + 0.5 * oldfullState.thcoefs(j, k)))
-          val logProb0 = log(1.0 - p) //The log of the probability I=0
-          val logProb1 = log(p) + logInitExp //The log of the probability I=1
-          val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
-          val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
-          val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
-          var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
-          val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
+        val u = breeze.stats.distributions.Uniform(0, 1).draw()
 
-          if (newProb0 < u) {
-            //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
-            curIndicsEstim(j, k) = 1.0
-            count += 1.0
-            val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
-            val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(j) + oldfullState.bcoefs(k)))) * varPInter
-            curThetaEstim(j, k) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
-          }
-          else {
-            //Update indicator and current interactions if indicator = 0.0
-            curIndicsEstim(j, k) = 0.0
-            curThetaEstim(j, k) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / oldfullState.tauabth(2))).draw() // sample from the prior of interactions
-          }
+        //log-sum-exp trick
+        val thcoef = oldfullState.thcoefs(item.a, item.b)
+        val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
+        val logProb0 = log(1.0 - p) //The log of the probability I=0
+        val logProb1 = log(p) + logInitExp //The log of the probability I=1
+        val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
+        val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
+        val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
+        var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
+        val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
+
+        if (newProb0 < u) {
+          //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
+          curIndicsEstim(item.a, item.b) = 1.0
+          count += 1.0
+          val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
+          val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
+          curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
         }
-      }
+        else {
+          //Update indicator and current interactions if indicator = 0.0
+          curIndicsEstim(item.a,item.b) = 0.0
+          curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / oldfullState.tauabth(2))).draw() // sample from the prior of interactions
+        }
+      })
+
       curCount(0)= count
       oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
     }
@@ -337,14 +342,13 @@ object FPStateMonadVS {
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
   def YminusMuAndEffects(structure:DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    val alphaLevels = structure.nj
-    val betaLevels = structure.nk
     var sum = 0.0
-    for (ialpha <- 0 until alphaLevels) {
-      for (ibeta <-0 until betaLevels){
-        sum += structure.getDVList(ialpha, ibeta).map(x => scala.math.pow(x-mu-alphaEff(ialpha)-betaEff(ibeta)-interEff(ialpha,ibeta)*indics(ialpha,ibeta),2)).reduce((x, y) => x + y)
-      }
-    }
+
+    structure.foreach( item => {
+      val a = item.a
+      val b = item.b
+      sum += item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) * indics(a, b), 2)).sum
+    })
     sum
   }
 
