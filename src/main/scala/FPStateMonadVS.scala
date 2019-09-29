@@ -214,36 +214,23 @@ object FPStateMonadVS {
     * Add all the beta effects for a given alpha.
     */
   def sumBetaEffGivenAlpha(structure: DVStructure, alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
-    val betaLevels = structure.nk
+    var sum = 0.0
+    structure.getAllItemsForGivenA(alphaIndex).foreach( item => {
+      sum += (item.list.length)*betaEff(item.b)
+    })
 
-    def sumbga(n: Int): Double = {
-      @annotation.tailrec
-      def go(n:Int, sum: Double): Double={
-        if (n<0) sum
-        else go(n-1, sum + structure.getDVList(alphaIndex,n).length*betaEff(n))
-      }
-      go(n, 0.0)
-    }
-    val sum = sumbga(betaLevels-1)
     sum
-
   }
 
   /**
     * Add all the alpha effects for a given beta.
     */
   def sumAlphaGivenBeta(structure: DVStructure, betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
-    val alphaLevels = structure.nj
+    var sum = 0.0
+    structure.getAllItemsForGivenB(betaIndex).foreach( item => {
+      sum += (item.list.length)*alphaEff(item.a)
+    })
 
-    def sumagb(n: Int): Double = {
-      @annotation.tailrec
-      def go(n:Int, sum: Double): Double={
-        if (n<0) sum
-        else go(n-1, sum + structure.getDVList(n,betaIndex).length*alphaEff(n))
-      }
-      go(n, 0.0)
-    }
-    val sum = sumagb(alphaLevels-1)
     sum
   }
   /**
@@ -274,22 +261,12 @@ object FPStateMonadVS {
     }
     val sumBeta = sumbEff(nj-1)
 
-    // For Interaction effects
-    for (i <- 0 until nj) {
-      for (j <- 0 until nk) {
-        sumInter += sumInterEff(structure, i, j, interEff, indics)
-      }
-    }
-    sumAlpha + sumBeta + sumInter
-  }
+    // Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
+    structure.foreach( item => {
+      sumInter += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
+    })
 
-  /**
-    * Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
-    */
-  def sumInterEff(structure: DVStructure, alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    val noOfElements = structure.getDVList(alphaIndex, betaIndex).length
-    val sum = noOfElements*indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
-    sum
+    sumAlpha + sumBeta + sumInter
   }
 
   /**

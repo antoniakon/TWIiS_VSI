@@ -1,5 +1,7 @@
 import breeze.linalg.DenseVector
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * Created by Antonia Kontaratou.
   * Creates the DVStructure of the form: Array[Array[DVList]]
