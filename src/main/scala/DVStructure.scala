@@ -96,4 +96,28 @@ class DVStructure(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVe
     }
   }
 
+  def getAllItemsForGivenA(a : Int): List[DVItem] = {
+    val listBuffer = ListBuffer[DVItem]()
+
+      for ( i <- 0 until nk) {
+        listBuffer +=new DVItem(a, i, myStructure(a)(i))
+      }
+
+    listBuffer.toList
+  }
+
+  def getAllItemsForGivenB(b : Int): List[DVItem] = {
+    val listBuffer = ListBuffer[DVItem]()
+
+    for ( i <- 0 until nj) {
+      listBuffer += new DVItem(i, b, myStructure(i)(b))
+    }
+
+    listBuffer.toList
+  }
+
+  def getAllItemsMappedByA() : Map[Int, List[DVItem]] = (0 until nj).map(x => (x, getAllItemsForGivenA(x))).toMap
+
+  def getAllItemsMappedByB() : Map[Int, List[DVItem]] = (0 until nk).map(x => (x, getAllItemsForGivenB(x))).toMap
+
 }

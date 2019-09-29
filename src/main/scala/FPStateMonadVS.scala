@@ -111,8 +111,8 @@ object FPStateMonadVS {
     def nextAlphaCoefs(oldfullState: FullState):FullState={
 
       val curAlphaEstim = (DenseVector.zeros[Double](alphaLevels))
-      structure.foreach( item => {
-        val j = item.a
+      structure.getAllItemsMappedByA().foreach( item => {
+        val j = item._1
         val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
         val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
         val SumBeta = sumBetaEffGivenAlpha(structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
@@ -129,8 +129,8 @@ object FPStateMonadVS {
     // helper function for beta coeffs
     def nextBetaCoefs(oldfullState: FullState):FullState={
       val curBetaEstim = (DenseVector.zeros[Double](betaLevels))
-      structure.foreach( item => {
-        val k = item.b
+      structure.getAllItemsMappedByB().foreach( item => {
+        val k = item._1
         val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
         val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
         val SumAlpha = sumAlphaGivenBeta(structure, k, oldfullState.acoefs)//the sum of the alpha effects given beta
