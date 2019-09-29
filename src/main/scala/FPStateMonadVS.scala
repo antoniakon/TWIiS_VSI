@@ -70,34 +70,24 @@ object FPStateMonadVS {
     // Update taus (taua, taub, tauInt)
     // helper function for taus
     def nexttaus(oldfullState: FullState):FullState= {
+
+      //todo: check if acoef non set values create an issue
+      var sumaj = 0.0
+      oldfullState.acoefs.foreachValue( acoef => {
+        sumaj += pow(acoef - alphaPriorMean, 2)
+      })
+
+      //todo: check if bcoef non set values create an issue
+      var sumbk = 0.0
+      oldfullState.bcoefs.foreachValue( bcoef => {
+        sumbk += pow(bcoef - betaPriorMean, 2)
+      })
+      
+      //todo: check if thcoef non set values create an issue
       var sumThetajk = 0.0
-
-      def calcsumajr(n: Int): Double = {
-        def go(n: Int, sumaj: Double): Double={
-        if (n < 0) sumaj
-        else {
-          go(n - 1, sumaj + pow((oldfullState.acoefs(n) - alphaPriorMean), 2))
-        }
-      }
-        go(n,0.0)
-    }
-      val sumaj = calcsumajr(alphaLevels-1)
-
-      def calcsumbkr(n: Int): Double = {
-        def go(n: Int, sumbk: Double): Double={
-          if (n < 0) sumbk
-          else go(n - 1, sumbk + pow((oldfullState.bcoefs(n) - betaPriorMean), 2))
-        }
-        go(n,0.0)
-      }
-      val sumbk = calcsumbkr(betaLevels-1)
-
-
-      for (j <- 0 until alphaLevels) {
-        for (k <- 0 until betaLevels) {
-          sumThetajk = sumThetajk + pow((oldfullState.thcoefs(j, k) - thetaPriorMean), 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
-        }
-      }
+      oldfullState.thcoefs.foreachValue(thcoef => {
+        sumThetajk += pow(thcoef -thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
+      })
 
       val newtauAlpha = breeze.stats.distributions.Gamma(aPrior + alphaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
       val newtauBeta = breeze.stats.distributions.Gamma(aPrior + betaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
