@@ -322,7 +322,7 @@ object FPStateMonadVS {
     val sumObs = y.toArray.sum // Sum of the values of all the observations
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
-    val structure = new DVStructure(y, alpha, beta)
+    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
     val alphaLevels = alpha.toArray.distinct.length
     val betaLevels = beta.toArray.distinct.length
 

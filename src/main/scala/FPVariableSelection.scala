@@ -15,7 +15,7 @@ import scala.collection.mutable.ListBuffer
 
 object FPVariableSelection {
 
-  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaPriorMean: Double,  betaPriorMean: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
+  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructureArrays, alphaPriorMean: Double, betaPriorMean: Double, mu0: Double, tau0: Double, a: Double, b: Double, thetaPriorMean: Double, aPrior: Double, bPrior: Double, p: Double) = {
 
     val sampleNo = noOfIter / thin + 1 // Number of samples created from the MCMC
     val alphaLevels= structure.nj
@@ -180,7 +180,7 @@ object FPVariableSelection {
   /**
     * Add all the beta effects for a given alpha.
     */
-  def sumBetaEffGivenAlpha(structure: DVStructure, alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
+  def sumBetaEffGivenAlpha(structure: DVStructureArrays, alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
     val betaLevels = structure.nk
     var sum = 0.0
     for (ibeta <- 0 until betaLevels) {
@@ -192,7 +192,7 @@ object FPVariableSelection {
   /**
     * Add all the alpha effects for a given beta.
     */
-  def sumAlphaGivenBeta(structure: DVStructure, betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
+  def sumAlphaGivenBeta(structure: DVStructureArrays, betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
     val alphaLevels = structure.nj
     var sum = 0.0
     for (ialpha <- 0 until alphaLevels) {
@@ -203,7 +203,7 @@ object FPVariableSelection {
   /**
     * Calculate the sum of all the alpha and all the beta effects for all the observations.
     */
-  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumAllMainInterEff(structure: DVStructureArrays, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sumBeta = 0.0
     var sumAlpha = 0.0
     var sumInter = 0.0
@@ -231,7 +231,7 @@ object FPVariableSelection {
   /**
     * Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
     */
-  def sumInterEff(structure: DVStructure, alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEff(structure: DVStructureArrays, alphaIndex: Int, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val noOfElements = structure.getDVList(alphaIndex, betaIndex).length
     val sum = noOfElements*indics(alphaIndex, betaIndex) * interEff(alphaIndex, betaIndex)
     sum
@@ -240,7 +240,7 @@ object FPVariableSelection {
   /**
     * Add all the interaction effects for a given alpha.
     */
-  def sumInterEffGivenAlpha(structure: DVStructure, alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEffGivenAlpha(structure: DVStructureArrays, alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val betaLevels = structure.nk
     var sum = 0.0
     for (ibeta <- 0 until betaLevels) {
@@ -252,7 +252,7 @@ object FPVariableSelection {
   /**
     * Add all the interaction effects for a given beta.
     */
-  def sumInterEffGivenBeta(structure: DVStructure, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEffGivenBeta(structure: DVStructureArrays, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val alphaLevels = structure.nj
     var sum = 0.0
     for (ialpha <- 0 until alphaLevels) {
@@ -266,7 +266,7 @@ object FPVariableSelection {
   /**
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
-  def YminusMuAndEffects(structure:DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def YminusMuAndEffects(structure:DVStructureArrays, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     val alphaLevels = structure.nj
     val betaLevels = structure.nk
     var sum = 0.0
@@ -297,7 +297,7 @@ object FPVariableSelection {
     val sumObs = y.toArray.sum // Sum of the values of all the observations
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
-    val structure = new DVStructure(y, alpha, beta)
+    val structure = new DVStructureArrays(y, alpha, beta)
 
     // Parameters
     val noOfIters = 10000
