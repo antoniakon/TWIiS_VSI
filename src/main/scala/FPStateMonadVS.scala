@@ -20,7 +20,7 @@ object FPStateMonadVS {
     val njk = alphaLevels * betaLevels // Number of levels of interactions
 
     val curCount = Array(0.0)
-    
+
     //Define case classes
     case class FullState(acoefs: DenseVector[Double], bcoefs: DenseVector[Double], thcoefs: DenseMatrix[Double], indics: DenseMatrix[Double],finalCoefs: DenseMatrix[Double], mt: DenseVector[Double], tauabth: DenseVector[Double])
 
@@ -294,7 +294,8 @@ object FPStateMonadVS {
     val sumObs = y.toArray.sum // Sum of the values of all the observations
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
-    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
+//    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
+    val structure : DVStructure = new DVStructureMap(y, alpha, beta)
     val alphaLevels = alpha.toArray.distinct.length
     val betaLevels = beta.toArray.distinct.length
 
