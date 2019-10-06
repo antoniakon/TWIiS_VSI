@@ -288,7 +288,7 @@ object FPStateMonadVS {
     readLine()
 
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/100919_15x20/Data/simulInter100919.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/asymmetricBoth/simulInterAsymmetricBoth.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -299,8 +299,8 @@ object FPStateMonadVS {
     val betaLevels = beta.toArray.distinct.length
 
     // Parameters
-    val noOfIters = 100
-    val thin = 5
+    val noOfIters = 100000
+    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -319,57 +319,50 @@ object FPStateMonadVS {
           alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
           a, b, aPrior, bPrior, p)
       )
-
+    println("alphas")
     val acoefficients= statesResults.fstateL.map(f=>f.acoefs)
-    println(acoefficients)
+    //println(acoefficients)
     val acoefMat= DenseMatrix(acoefficients.map(_.toArray):_*)
     val meanValsAcoef = mean(acoefMat(::, *))
     println(meanValsAcoef)
 
-//    //Find the average
-//    println("alphas")
-//    val acoefficients = statesResults.acoefs.acoefs
-//    val acoefMat= DenseMatrix(acoefficients.map(_.toArray):_*)
-//    val meanValsAcoef = mean(acoefMat(::, *))
-//    println(meanValsAcoef)
-//
-//    println("betas")
-//    val bcoefficients = statesResults.bcoefs.bcoefs
-//    val bcoefMat= DenseMatrix(bcoefficients.map(_.toArray):_*)
-//    val meanValsBcoef = mean(bcoefMat(::, *))
-//    println(meanValsBcoef)
-//
-//    println("mu, tau")
-//    val mtcoefficients = statesResults.mt.mt
-//    val mtcoefMat= DenseMatrix(mtcoefficients.map(_.toArray):_*)
-//    val meanValsmtcoef = mean(mtcoefMat(::, *))
-//    println(meanValsmtcoef)
-//
-//    println("taus")
-//    val tauscoefficients = statesResults.tauabth.tauabth
-//    val tauscoefMat= DenseMatrix(tauscoefficients.map(_.toArray):_*)
-//    val outputFile = new File("/home/antonia/Desktop/tausTry.csv")
-//    breeze.linalg.csvwrite(outputFile, tauscoefMat, separator = ',')
-//    val meanValstauscoef = mean(tauscoefMat(::, *))
-//    println(meanValstauscoef)
-//
-//    println("thetas")
-//    val thetascoefficients = statesResults.thcoefs.thcoefs.map(x=>x.toDenseVector)
-//    val thetascoefMat= DenseMatrix(thetascoefficients.map(_.toArray):_*)
-//    val meanValsthetascoef = mean(thetascoefMat(::, *))
-//    println(meanValsthetascoef)
-//
-//    println("indicators")
-//    val indicscoefficients = statesResults.indics.indics.map(x=>x.toDenseVector)
-//    val indicscoefMat= DenseMatrix(indicscoefficients.map(_.toArray):_*)
-//    val meanValsindicscoef = mean(indicscoefMat(::, *))
-//    println(meanValsindicscoef)
-//
-//    println("finalCoefs")
-//    val finalcoefficients = statesResults.finalCoefs.finalCoefs.map(x=>x.toDenseVector)
-//    val finalcoefMat= DenseMatrix(finalcoefficients.map(_.toArray):_*)
-//    val meanValsfinalcoef = mean(finalcoefMat(::, *))
-//    println(meanValsfinalcoef)
+    println("betas")
+    val bcoefficients = statesResults.fstateL.map(f=>f.bcoefs)
+    val bcoefMat= DenseMatrix(bcoefficients.map(_.toArray):_*)
+    val meanValsBcoef = mean(bcoefMat(::, *))
+    println(meanValsBcoef)
+
+    println("mu, tau")
+    val mtcoefficients = statesResults.fstateL.map(f=>f.mt)
+    val mtcoefMat= DenseMatrix(mtcoefficients.map(_.toArray):_*)
+    val meanValsmtcoef = mean(mtcoefMat(::, *))
+    println(meanValsmtcoef)
+
+    println("taus")
+    val tauscoefficients = statesResults.fstateL.map(f=>f.tauabth)
+    val tauscoefMat= DenseMatrix(tauscoefficients.map(_.toArray):_*)
+    //val outputFile = new File("/home/antonia/Desktop/tausTry.csv")
+    //breeze.linalg.csvwrite(outputFile, tauscoefMat, separator = ',')
+    val meanValstauscoef = mean(tauscoefMat(::, *))
+    println(meanValstauscoef)
+
+    println("thetas")
+    val thetascoefficients = statesResults.fstateL.map(f=>f.thcoefs.toDenseVector)
+    val thetascoefMat= DenseMatrix(thetascoefficients.map(_.toArray):_*)
+    val meanValsthetascoef = mean(thetascoefMat(::, *))
+    println(meanValsthetascoef)
+
+    println("indicators")
+    val indicscoefficients = statesResults.fstateL.map(f=>f.indics.toDenseVector)
+    val indicscoefMat= DenseMatrix(indicscoefficients.map(_.toArray):_*)
+    val meanValsindicscoef = mean(indicscoefMat(::, *))
+    println(meanValsindicscoef)
+
+    println("finalCoefs")
+    val finalcoefficients = statesResults.fstateL.map(f=>f.finalCoefs.toDenseVector)
+    val finalcoefMat= DenseMatrix(finalcoefficients.map(_.toArray):_*)
+    val meanValsfinalcoef = mean(finalcoefMat(::, *))
+    println(meanValsfinalcoef)
  }
 
 }
