@@ -6,6 +6,11 @@ trait DVStructure {
   def calcAlphaSum(j: Int): Double
 
   /**
+    * Calculates the sum of the response y for a given zeta, not include the cases where k==j
+    */
+  def calcZetaSum(j: Int): Double
+
+  /**
     * Calculates the sum of the response y for a given beta
     */
   def calcBetaSum(k: Int): Double
@@ -14,6 +19,11 @@ trait DVStructure {
     * Calculates the number of the responses y for a given alpha
     */
   def calcAlphaLength(j: Int): Double
+
+  /**
+    * Calculates the number of the responses y for a given zeta
+    */
+  def calcZetaLength(j: Int): Double
 
   /**
     * Calculates the number of the responses y for a given beta
@@ -29,9 +39,13 @@ trait DVStructure {
 
   def getAllItemsForGivenA(a : Int): List[DVItem]
 
+  def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]
+
   def getAllItemsForGivenB(b : Int): List[DVItem]
 
   def getAllItemsMappedByA() : Map[Int, List[DVItem]]
+
+  def getAllItemsMappedByZ() : Map[Int, Map[(Int, Int), DVList]]
 
   def getAllItemsMappedByB() : Map[Int, List[DVItem]]
 

@@ -10,6 +10,8 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
 
   val nj = alpha.toArray.distinct.length
   val nk = beta.toArray.distinct.length
+  //toDo: change the value of nz
+  private val nz = nk
   private val myStructure = Array.ofDim[DVList](nj, nk)
   init
 
@@ -41,6 +43,17 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
   }
 
   /**
+    * Calculates the sum of the response y for a given zeta, not include the cases where k==j
+    */
+  override def calcZetaSum(j: Int): Double = {
+    var sum = 0.0
+    for(k <- 0 until nk){
+      sum = sum + myStructure(j)(k).sum
+    }
+    sum - myStructure(j)(j).sum
+  }
+
+  /**
     * Calculates the sum of the response y for a given beta
     */
   override def calcBetaSum(k: Int): Double = {
@@ -60,6 +73,17 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
       length = length + myStructure(j)(k).length
     }
     length
+  }
+
+  /**
+    * Calculates the number of the responses y for a given alpha
+    */
+  override def calcZetaLength(j: Int): Double = {
+    var length = 0.0
+    for(k <- 0 until nk){
+      length = length + myStructure(j)(k).length
+    }
+    length - myStructure(j)(j).length
   }
 
   /**
@@ -109,6 +133,10 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
   }
 
   override def getAllItemsMappedByA() : Map[Int, List[DVItem]] = (0 until nj).map(x => (x, getAllItemsForGivenA(x))).toMap
+
+  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]= ???
+
+  override def getAllItemsMappedByZ(): Map[Int, Map[(Int, Int), DVList]] = ???
 
   override def getAllItemsMappedByB() : Map[Int, List[DVItem]] = (0 until nk).map(x => (x, getAllItemsForGivenB(x))).toMap
 

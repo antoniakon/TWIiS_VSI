@@ -1,8 +1,13 @@
-import breeze.linalg.DenseVector
+import breeze.linalg.{DenseVector, max}
 
 class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
   private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
+
+  val alphaLevels = alpha.toArray.distinct.length
+  val betaLevels = beta.toArray.distinct.length
+  val zetaLevels = max(alphaLevels, betaLevels)
+
   init()
 
   private def init(): Unit = {
@@ -99,5 +104,41 @@ class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: Dens
 
   override def getAllItemsMappedByB(): Map[Int, List[DVItem]] = {
     myStructure.keys.map(k => k._2).map(x => (x, getAllItemsForGivenB(x))).toMap
+  }
+
+  /**
+    * Calculates the sum of the response y for a given zeta, not include the cases where k==j
+    */
+  override def calcZetaSum(zj: Int): Double = {
+    //toDo: check flatten after map instead of flatMap. if it give
+    getAllOtherZetasItemsForGivenZ(zj)
+      .map(elem => elem._2.sum)
+      .reduce(_+_)
+
+  }
+
+  /**
+    * Calculates the number of the responses y for a given zeta
+    */
+  override def calcZetaLength(zj: Int): Double = {
+    getAllOtherZetasItemsForGivenZ(zj)
+      .map(elem => elem._2.length)
+      .reduce(_+_)
+  }
+
+  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
+    getAllItemsMappedByZ()
+      .filterKeys(k => k==z).flatMap(elem => elem._2)
+  }
+
+  override def getAllItemsMappedByZ(): Map[Int, Map[(Int, Int), DVList]] = {
+    var myMap = scala.collection.mutable.Map[Int,  Map[(Int, Int), DVList]]()
+
+    for (i <- 0 until zetaLevels) {
+      val selectedItems = myStructure.filterKeys(key => (key._1 == i || key._2 == i) && !(key._1 == i && key._2 == i)).toMap
+      myMap += (i -> selectedItems)
+
+    }
+    myMap.toMap
   }
 }
