@@ -58,5 +58,9 @@ trait DVStructure {
 
   def getAllItemsMappedByB() : Map[Int, List[DVItem]]
 
+  def sizeOfStructure(): Int
+
+  def sizeOfDouble(): Int
+
 
 }
