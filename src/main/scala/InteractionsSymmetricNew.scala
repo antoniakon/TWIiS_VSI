@@ -28,6 +28,8 @@ object InteractionsSymmetricNew {
       val meanMu = (mu0 * tau0 + prevtau * (SumObs - sumAllMainInterEff(structure, oldfullState.acoefs, oldfullState.bcoefs, alphaLevels, betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
       val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
       val newtau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(structure, prevmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+//      val newmu = 10.7
+//      val newtau = 1.0
       oldfullState.copy(mt=DenseVector(newmu,newtau))
     }
 
@@ -57,6 +59,9 @@ object InteractionsSymmetricNew {
       val newtauBeta = breeze.stats.distributions.Gamma(aPrior + betaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
       val newtauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
+//      val newtauAlpha = 0.49
+//      val newtauBeta = 0.24
+//      val newtauTheta = 0.31
       oldfullState.copy(tauabth = DenseVector(newtauAlpha, newtauBeta, newtauTheta))
     }
 
@@ -75,7 +80,7 @@ object InteractionsSymmetricNew {
         val meanPalpha = (alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
         curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
       })
-
+      //curAlphaEstim = DenseVector(-1.16, 0.043,-1.815,-0.59,2.59,-1.51,0.48,-0.74,-0.688,2.43,-0.349,-0.16, -1.63, 2.788, 0.83)
       oldfullState.copy(acoefs = curAlphaEstim)
     }
 
@@ -93,6 +98,7 @@ object InteractionsSymmetricNew {
         val meanPbeta = (betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
         curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
       })
+      //curBetaEstim = DenseVector(-0.15, -0.727, -3.71, 0.68, -0.83, -1.809, 0.545, -2.44, -0.66, 5.67, 1.91, 0.183, -1.539, 2.973, 1.688, 2.602, -0.611, 0.779, -1.598, -1.068)
       oldfullState.copy(bcoefs = curBetaEstim)
     }
 
@@ -107,15 +113,43 @@ object InteractionsSymmetricNew {
       structureSorted.foreach( item => {
         val j= item.a
         val k = item.b
+        //println(s"j,k: $j,$k")
         // toDo: Njkkj is the same as item.list.length from structureSorted so see maybe it is not necessary to have calcAlphaBetaLength
-        val Njkkj = structure.calcAlphaBetaLength(j,k) + structure.calcAlphaBetaLength(k,j) // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
-        val SXjkkj = structure.calcAlphaBetaSum(j,k) + structure.calcAlphaBetaSum(k,j) // the sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
+        // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
+        val Njkkj =
+          if(j==k) {structure.calcAlphaBetaLength(j,k)
+        }else{
+            structure.calcAlphaBetaLength(j,k) + structure.calcAlphaBetaLength(k,j)
+          }
+
+        // the sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
+        val SXjkkj =
+          if(j==k) {
+            structure.calcAlphaBetaSum(j,k)
+          } else{
+            structure.calcAlphaBetaSum(j,k) + structure.calcAlphaBetaSum(k,j)
+          }
 
         val u = breeze.stats.distributions.Uniform(0, 1).draw()
 
         //log-sum-exp trick
         val thcoef = oldfullState.thcoefs(item.a, item.b) // This is the same for (item.a, item.b) and (item.b, item.a) so it does not matter which one we use
-        val logInitExp = oldfullState.mt(1) * thcoef * (SXjkkj - Njkkj * oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef)
+        val NoOfajForbk = structure.calcAlphaBetaLength(j,k) //No of observations for which a==j and b==k
+        val NoOfakForbj = structure.calcAlphaBetaLength(k,j) //No of observations for which a==k and b==j
+
+        def returnIfExists(dv: DenseVector[Double], ind: Int)={
+          if(ind < dv.length) dv(ind)
+          else 0.0
+        }
+
+        val SigmaTheta =
+          if(j==k){
+            SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk*(returnIfExists(oldfullState.acoefs, item.a) + returnIfExists(oldfullState.bcoefs, item.b))
+          }else{
+            SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk*(returnIfExists(oldfullState.acoefs, item.a) + returnIfExists(oldfullState.bcoefs, item.b)) - NoOfakForbj*(returnIfExists(oldfullState.acoefs, item.b) + returnIfExists(oldfullState.bcoefs, item.a))
+          }
+
+        val logInitExp = oldfullState.mt(1) * thcoef * (SigmaTheta - 0.5 * Njkkj * thcoef)
         val logProb0 = log(1.0 - p) //The log of the probability I=0
         val logProb1 = log(p) + logInitExp //The log of the probability I=1
         val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
@@ -127,15 +161,19 @@ object InteractionsSymmetricNew {
         if (newProb0 < u) {
           //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
           curIndicsEstim(item.a, item.b) = 1.0
+          curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
           count += 1.0
           val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njkkj) //the variance for gammajk
-          val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjkkj - Njkkj * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
+          val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * SigmaTheta) * varPInter
           curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+          curThetaEstim(item.b, item.a) = curThetaEstim(item.a, item.b)
         }
         else {
           //Update indicator and current interactions if indicator = 0.0
           curIndicsEstim(item.a,item.b) = 0.0
+          curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
           curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / oldfullState.tauabth(2))).draw() // sample from the prior of interactions
+          curThetaEstim(item.b,item.a) = curThetaEstim(item.a,item.b)
         }
       })
 
@@ -311,6 +349,7 @@ object InteractionsSymmetricNew {
     val betaLevels = beta.toArray.distinct.max+1
     val noOfInters = structureSorted.sizeOfStructure()
     val zetaLevels = max(alphaLevels, betaLevels)
+    println(zetaLevels)
     val sizeofDouble = structure.sizeOfDouble()
 
     // Parameters
@@ -356,8 +395,6 @@ object InteractionsSymmetricNew {
     println("taus")
     val tauscoefficients = statesResults.fstateL.map(f=>f.tauabth)
     val tauscoefMat= DenseMatrix(tauscoefficients.map(_.toArray):_*)
-    //val outputFile = new File("/home/antonia/Desktop/tausTry.csv")
-    //breeze.linalg.csvwrite(outputFile, tauscoefMat, separator = ',')
     val meanValstauscoef = mean(tauscoefMat(::, *))
     println(meanValstauscoef)
 
@@ -378,6 +415,11 @@ object InteractionsSymmetricNew {
     val finalcoefMat= DenseMatrix(finalcoefficients.map(_.toArray):_*)
     val meanValsfinalcoef = mean(finalcoefMat(::, *))
     println(meanValsfinalcoef)
+
+    // Save the results to a csv file
+    val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, acoefMat, bcoefMat, finalcoefMat, indicscoefMat)
+    val outputFile = new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricInters/symmetricInteractionsScalaRes.csv")
+    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
   }
 
 }
