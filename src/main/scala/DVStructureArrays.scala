@@ -138,6 +138,10 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
 
   override def getAllItemsMappedByZ(): Map[Int, Map[(Int, Int), DVList]] = ???
 
+  override def calcAlphaBetaLength(j: Int, k: Int): Double = ???
+
+  override def calcAlphaBetaSum(j: Int, k: Int): Double = ???
+
   override def getAllItemsMappedByB() : Map[Int, List[DVItem]] = (0 until nk).map(x => (x, getAllItemsForGivenB(x))).toMap
 
 }

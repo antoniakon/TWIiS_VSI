@@ -105,14 +105,16 @@ object InteractionsSymmetricNew {
       var count = 0.0
 
       structure.foreach( item => {
-        val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
-        val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
+        val j= item.a
+        val k = item.b
+        val Njkkj = item.list.length + structure.calcAlphaBetaLength(k,j) // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
+        val SXjkkj = item.list.sum + structure.calcAlphaBetaSum(k,j) // the sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
 
         val u = breeze.stats.distributions.Uniform(0, 1).draw()
 
         //log-sum-exp trick
         val thcoef = oldfullState.thcoefs(item.a, item.b)
-        val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
+        val logInitExp = oldfullState.mt(1) * thcoef * (SXjkkj - Njkkj * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
         val logProb0 = log(1.0 - p) //The log of the probability I=0
         val logProb1 = log(p) + logInitExp //The log of the probability I=1
         val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
@@ -125,8 +127,8 @@ object InteractionsSymmetricNew {
           //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
           curIndicsEstim(item.a, item.b) = 1.0
           count += 1.0
-          val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
-          val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
+          val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njkkj) //the variance for gammajk
+          val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjkkj - Njkkj * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
           curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
         }
         else {
@@ -157,6 +159,7 @@ object InteractionsSymmetricNew {
     def calculateNewState( n:Int, fstate:FullState, fstateList:FullStateList): FullStateList={
       if (n==0) fstateList
       else{
+        println(n)
         val latestmt = nextmutau(fstate)
         val latesttaus = nexttaus(latestmt)
         val latestalphas = nextAlphaCoefs(latesttaus)
@@ -281,7 +284,7 @@ object InteractionsSymmetricNew {
     readLine()
 
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/asymmetricBoth/simulInterAsymmetricBoth.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricInters/simulInterSymmetricInters.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations

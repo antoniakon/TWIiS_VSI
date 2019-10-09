@@ -74,6 +74,36 @@ class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: Dens
   }
 
   /**
+    * Calculates the number of the responses y for a given alpha and beta
+    */
+  override def calcAlphaBetaLength(j: Int, k: Int): Double = {
+    // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
+    val lengthMaybe = myStructure.get(j,k)
+    val length = lengthMaybe match {
+      case Some(dvlist) =>
+        dvlist.length
+      case None =>
+        0
+    }
+    length
+  }
+
+  /**
+    * Calculates the sum of the responses y for a given alpha and beta
+    */
+  override def calcAlphaBetaSum(j: Int, k: Int): Double = {
+    // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
+    val lengthMaybe = myStructure.get(j,k)
+    val sum = lengthMaybe match {
+      case Some(dvlist) =>
+        dvlist.sum
+      case None =>
+        0
+    }
+    sum
+  }
+
+  /**
     * Returns the DVList for (alpha,beta)
     */
   override def getDVList(j: Int, k: Int): DVList = {
