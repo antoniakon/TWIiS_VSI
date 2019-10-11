@@ -6,11 +6,11 @@ import breeze.stats.mean
 
 object BothSymmetric {
 
-    def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int, zetaLevels: Int, alphaLevelsDist: Int, betaLevelsDist: Int,
-                          alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
+  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, structureSorted: DVStructure, alphaLevels: Int, betaLevels: Int, zetaLevels: Int, noOfInters: Int,  sizeOfDouble: Int,
+                        alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
                           a: Double, b: Double, aPrior: Double, bPrior: Double, p: Double) = {
 
-      val njk = alphaLevelsDist * betaLevelsDist // Number of levels of interactions
+      val njk = 2 * noOfInters - sizeOfDouble // Number of levels of interactions
 
       val curCount = Array(0.0)
 
@@ -74,19 +74,50 @@ object BothSymmetric {
       //Helper function for indicators and interactions
       def nextIndicsInters(oldfullState: FullState):FullState= {
 
-        val curIndicsEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
-        val curThetaEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
+        val curIndicsEstim = (DenseMatrix.zeros[Double](zetaLevels, zetaLevels))
+        val curThetaEstim = (DenseMatrix.zeros[Double](zetaLevels, zetaLevels))
         var count = 0.0
 
-        structure.foreach( item => {
-          val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
-          val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
+        structureSorted.foreach( item => {
+          val j= item.a
+          val k = item.b
+          // toDo: Njkkj is the same as item.list.length from structureSorted so see maybe it is not necessary to have calcAlphaBetaLength
+          // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
+          val Njkkj =
+          if(j==k) {structure.calcAlphaBetaLength(j,k)
+          }else{
+            structure.calcAlphaBetaLength(j,k) + structure.calcAlphaBetaLength(k,j)
+          }
+
+          // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
+          // the sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
+          val SXjkkj =
+          if(j==k) {
+            structure.calcAlphaBetaSum(j,k)
+          } else{
+            structure.calcAlphaBetaSum(j,k) + structure.calcAlphaBetaSum(k,j)
+          }
 
           val u = breeze.stats.distributions.Uniform(0, 1).draw()
 
           //log-sum-exp trick
-          val thcoef = oldfullState.thcoefs(item.a, item.b)
-          val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.zcoefs(item.a) + oldfullState.zcoefs(item.b) + 0.5 * thcoef))
+          val thcoef = oldfullState.thcoefs(item.a, item.b) // This is the same for (item.a, item.b) and (item.b, item.a) so it does not matter which one we use
+          val NoOfajForbk = structure.calcAlphaBetaLength(j,k) //No of observations for which a==j and b==k
+          val NoOfakForbj = structure.calcAlphaBetaLength(k,j) //No of observations for which a==k and b==j
+
+          def returnIfExists(dv: DenseVector[Double], ind: Int)={
+            if(ind < dv.length) dv(ind)
+            else 0.0
+          }
+
+          val SigmaTheta =
+            if(j==k){
+              SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk*(returnIfExists(oldfullState.zcoefs, item.a) + returnIfExists(oldfullState.zcoefs, item.b))
+            }else{
+              SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk*(returnIfExists(oldfullState.zcoefs, item.a) + returnIfExists(oldfullState.zcoefs, item.b)) - NoOfakForbj*(returnIfExists(oldfullState.zcoefs, item.b) + returnIfExists(oldfullState.zcoefs, item.a))
+            }
+
+          val logInitExp = oldfullState.mt(1) * thcoef * (SigmaTheta - 0.5 * Njkkj * thcoef)
           val logProb0 = log(1.0 - p) //The log of the probability I=0
           val logProb1 = log(p) + logInitExp //The log of the probability I=1
           val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
@@ -98,15 +129,19 @@ object BothSymmetric {
           if (newProb0 < u) {
             //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
             curIndicsEstim(item.a, item.b) = 1.0
+            curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
             count += 1.0
-            val varPInter = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Njk) //the variance for gammajk
-            val meanPInter = (thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.zcoefs(item.a) + oldfullState.zcoefs(item.b)))) * varPInter
+            val varPInter = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Njkkj) //the variance for gammajk
+            val meanPInter = (thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * SigmaTheta) * varPInter
             curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+            curThetaEstim(item.b, item.a) = curThetaEstim(item.a, item.b)
           }
           else {
             //Update indicator and current interactions if indicator = 0.0
             curIndicsEstim(item.a,item.b) = 0.0
+            curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
             curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
+            curThetaEstim(item.b, item.a) = curThetaEstim(item.a, item.b)
           }
         })
 
@@ -118,9 +153,9 @@ object BothSymmetric {
       val initmt = DenseVector[Double](0.0,1.0)
       val inittaus = DenseVector[Double](1.0,1.0)
       val initZetaCoefs = DenseVector.zeros[Double](zetaLevels)
-      val initThetas = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
-      val initIndics = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
-      val initFinals = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
+    val initThetas = DenseMatrix.zeros[Double](zetaLevels, zetaLevels)
+    val initIndics = DenseMatrix.zeros[Double](zetaLevels, zetaLevels)
+    val initFinals = DenseMatrix.zeros[Double](zetaLevels, zetaLevels)
 
       //    def addFullStateToList(fstateList: FullStateList): FullStateList={
       //      FullStateList(fstate::fstateList)
@@ -217,18 +252,31 @@ object BothSymmetric {
       readLine()
 
       // Read the data
-      val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/symmetricNew/symmetricMain/simulInterSymmetricMain.csv"))
+      val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricBoth/simulInterSymmetricBoth.csv"))
       val sampleSize = data.rows
       val y = data(::, 0)
       val sumObs = y.toArray.sum // Sum of the values of all the observations
       val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
       val beta = data(::, 2).map(_.toInt).map(x => x - 1)
       //    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
+      val alphaSorted = DenseVector.zeros[Int](sampleSize)
+      val betaSorted = DenseVector.zeros[Int](sampleSize)
+      // For the symmetric interactions sort the data, smaller first
+      for (i <- 0 until sampleSize) {
+        if (alpha(i) <= beta(i)) {
+          alphaSorted(i) = alpha(i)
+          betaSorted(i) = beta(i)
+        } else {
+          alphaSorted(i) = beta(i)
+          betaSorted(i) = alpha(i)
+        }
+      }
       val structure : DVStructure = new DVStructureMap(y, alpha, beta)
       val alphaLevels = alpha.toArray.distinct.max+1
       val betaLevels = beta.toArray.distinct.max+1
-      val alphaLevelsDist = alpha.toArray.distinct.length
-      val betaLevelsDist = beta.toArray.distinct.length
+      val structureSorted : DVStructure = new DVStructureMap(y, alphaSorted, betaSorted) // Sorted structure to be used for the indices to run through the data but not repeat e.g. only (1,3) and not (3,1)
+      val noOfInters = structureSorted.sizeOfStructure()
+      val sizeofDouble = structure.sizeOfDouble()
       val zetaLevels = max(alphaLevels, betaLevels)
 
       // Parameters
@@ -248,7 +296,7 @@ object BothSymmetric {
       val statesResults =
         time(
           variableSelection(
-            noOfIters, thin, sampleSize, sumObs, structure, alphaLevels, betaLevels, zetaLevels, alphaLevelsDist, betaLevelsDist,
+            noOfIters, thin, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble,
             alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
             a, b, aPrior, bPrior, p)
         )
@@ -293,7 +341,7 @@ object BothSymmetric {
 
       // Save the results to a csv file
       val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, zcoefMat, finalcoefMat, indicscoefMat)
-      val outputFile = new File("/home/antonia/ResultsFromCloud/Report/symmetricNew/symmetricMain/symmetricMainScalaMCMCRes.csv")
+      val outputFile = new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricBoth/symmetricBothScalaMCMCRes.csv")
       breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
     }
 
