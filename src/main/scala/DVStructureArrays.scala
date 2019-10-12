@@ -136,7 +136,6 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
 
   override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]= ???
 
-  override def getAllItemsMappedByZ(): Map[Int, Map[(Int, Int), DVList]] = ???
 
   override def calcAlphaBetaLength(j: Int, k: Int): Double = ???
 

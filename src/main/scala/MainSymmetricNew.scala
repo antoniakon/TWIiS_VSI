@@ -5,11 +5,11 @@ import cats._
 import breeze.stats.mean
 
 object MainSymmetricNew {
-  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int, zetaLevels: Int,
+  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int, zetaLevels: Int, alphaLevelsDist: Int, betaLevelsDist: Int,
                         alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
                         a: Double, b: Double, aPrior: Double, bPrior: Double, p: Double) = {
 
-    val njk = alphaLevels * betaLevels // Number of levels of interactions
+    val njk = alphaLevelsDist * betaLevelsDist // Number of levels of interactions
 
     val curCount = Array(0.0)
 
@@ -56,8 +56,8 @@ object MainSymmetricNew {
     // helper function for Zeta coeffs
     def nextZetaCoefs(oldfullState: FullState):FullState={
       val curZetaEstim = (DenseVector.zeros[Double](zetaLevels))
-      structure.getAllItemsMappedByZ().foreach( item => {
-        val j = item._1
+      (0 until zetaLevels).foreach( item => {
+        val j = item
         val SXzetaj = structure.calcZetaSum(j) // the sum of the observations that have zeta on either side
         val Nj = structure.calcZetaLength(j) // the sum of the observations that have zeta on either side
         val SumZeta = sumRemZetaEffGivenZeta(structure, j, oldfullState.zcoefs) //the sum of the zeta effects of the rest for a given zeta
@@ -216,7 +216,7 @@ object MainSymmetricNew {
     readLine()
 
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricMain/simulInterSymmetricMain.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/symmetricNew/symmetricMain/simulInterSymmetricMain.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -224,8 +224,10 @@ object MainSymmetricNew {
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
     //    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
     val structure : DVStructure = new DVStructureMap(y, alpha, beta)
-    val alphaLevels = alpha.toArray.distinct.length
-    val betaLevels = beta.toArray.distinct.length
+    val alphaLevels = alpha.toArray.distinct.max+1
+    val betaLevels = beta.toArray.distinct.max+1
+    val alphaLevelsDist = alpha.toArray.distinct.length
+    val betaLevelsDist = beta.toArray.distinct.length
     val zetaLevels = max(alphaLevels, betaLevels)
 
     // Parameters
@@ -245,15 +247,15 @@ object MainSymmetricNew {
     val statesResults =
       time(
         variableSelection(
-          noOfIters, thin, sampleSize, sumObs, structure, alphaLevels, betaLevels, zetaLevels,
+          noOfIters, thin, sampleSize, sumObs, structure, alphaLevels, betaLevels, zetaLevels, alphaLevelsDist, betaLevelsDist,
           alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
           a, b, aPrior, bPrior, p)
       )
 
     println("zetas")
-    val bcoefficients = statesResults.fstateL.map(f=>f.zcoefs)
-    val bcoefMat= DenseMatrix(bcoefficients.map(_.toArray):_*)
-    val meanValsBcoef = mean(bcoefMat(::, *))
+    val zcoefficients = statesResults.fstateL.map(f=>f.zcoefs)
+    val zcoefMat= DenseMatrix(zcoefficients.map(_.toArray):_*)
+    val meanValsBcoef = mean(zcoefMat(::, *))
     println(meanValsBcoef)
 
     println("mu, tau")
@@ -287,6 +289,11 @@ object MainSymmetricNew {
     val finalcoefMat= DenseMatrix(finalcoefficients.map(_.toArray):_*)
     val meanValsfinalcoef = mean(finalcoefMat(::, *))
     println(meanValsfinalcoef)
+
+    // Save the results to a csv file
+    val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, zcoefMat, finalcoefMat, indicscoefMat)
+    val outputFile = new File("/home/antonia/ResultsFromCloud/Report/symmetricNew/symmetricMain/symmetricMainScalaMCMCRes.csv")
+    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
   }
 
 }

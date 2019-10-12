@@ -7,8 +7,11 @@ class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: Dens
   val alphaLevels = alpha.toArray.distinct.length
   val betaLevels = beta.toArray.distinct.length
   val zetaLevels = max(alphaLevels, betaLevels)
+  private val newStructure = scala.collection.mutable.Map[Int,  Map[(Int, Int), DVList]]()
 
   init()
+  getAllItemsMappedByZ()
+  println(newStructure)
 
   private def init(): Unit = {
     for (i <- 0 until y.length) {
@@ -157,19 +160,20 @@ class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: Dens
   }
 
   override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
-    getAllItemsMappedByZ()
-      .filterKeys(k => k==z).flatMap(elem => elem._2)
+    newStructure
+      .filterKeys(k => k==z).flatMap(elem => elem._2).toMap
   }
 
-  override def getAllItemsMappedByZ(): Map[Int, Map[(Int, Int), DVList]] = {
-    var myMap = scala.collection.mutable.Map[Int,  Map[(Int, Int), DVList]]()
+  private def getAllItemsMappedByZ(): Unit = {
 
     for (i <- 0 until zetaLevels) {
       val selectedItems = myStructure.filterKeys(key => (key._1 == i || key._2 == i) && !(key._1 == i && key._2 == i)).toMap
-      myMap += (i -> selectedItems)
-
+      newStructure.get(i) match {
+        case None => newStructure += (i -> selectedItems)
+        case Some(value) => newStructure += (i -> selectedItems)
+      }
     }
-    myMap.toMap
+
   }
 
   override def sizeOfStructure():Int = myStructure.keys.size

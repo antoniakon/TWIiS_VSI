@@ -54,8 +54,6 @@ trait DVStructure {
 
   def getAllItemsMappedByA() : Map[Int, List[DVItem]]
 
-  def getAllItemsMappedByZ() : Map[Int, Map[(Int, Int), DVList]]
-
   def getAllItemsMappedByB() : Map[Int, List[DVItem]]
 
   def sizeOfStructure(): Int
