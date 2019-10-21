@@ -156,27 +156,20 @@ object AsymmetricBothStream {
       val initIndics = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
       val initFinals = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
 
-      //    def addFullStateToList(fstateList: FullStateList): FullStateList={
-      //      FullStateList(fstate::fstateList)
-      //    }
       // Calculate the new state
-      @annotation.tailrec
-      def calculateNewState( n:Int, fstate:FullState, fstateList:FullStateList): FullStateList={
-        if (n==0) fstateList
-        else{
-          println(n)
+      def calculateNextState(fstate:FullState): FullState={
           val latestmt = nextmutau(fstate)
           val latesttaus = nexttaus(latestmt)
           val latestalphas = nextAlphaCoefs(latesttaus)
           val latestbetas = nextBetaCoefs(latestalphas)
           val latestFullyUpdatedState = nextIndicsInters(latestbetas)
-          if((n % thin).equals(0)) {
-            calculateNewState(n-1, latestFullyUpdatedState, FullStateList(latestFullyUpdatedState::fstateList.fstateL))
-          }
-          else calculateNewState(n-1, latestFullyUpdatedState, fstateList)
-        }
+          latestFullyUpdatedState
       }
-      calculateNewState(noOfIter, FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
+
+      def streamStates(fstate: FullState): Stream[FullState]= Stream.iterate(fstate)(calculateNextState)
+
+      streamStates(FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus)).drop(1000).take(100000).toList
+
     }
 
     /**
@@ -289,7 +282,8 @@ object AsymmetricBothStream {
       readLine()
 
       // Read the data
-      val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/070619_40x50/simulInter07061940x50.csv"))
+      //val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/070619_40x50/simulInter07061940x50.csv"))
+      val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/simulInterAsymmetricBoth.csv"))
       val sampleSize = data.rows
       val y = data(::, 0)
       val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -301,8 +295,8 @@ object AsymmetricBothStream {
       val betaLevels = beta.toArray.distinct.length
 
       // Parameters
-      val noOfIters = 10000
-      val thin = 10
+      val noOfIters = 100000
+      val thin = 2
       val aPrior = 1
       val bPrior = 0.0001
       val alphaPriorMean = 0.0
@@ -321,27 +315,30 @@ object AsymmetricBothStream {
             alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
             a, b, aPrior, bPrior, p)
         )
+
+      val thinnedResults = statesResults.zipWithIndex
+        .filter{case(_, i) => (i+1) % thin ==0}.map {case(e, _) => e}
+
       println("alphas")
-      val acoefficients= statesResults.fstateL.map(f=>f.acoefs)
-      //println(acoefficients)
+      val acoefficients= thinnedResults.map(f=> f.acoefs)
       val acoefMat= DenseMatrix(acoefficients.map(_.toArray):_*)
       val meanValsAcoef = mean(acoefMat(::, *))
       println(meanValsAcoef)
 
       println("betas")
-      val bcoefficients = statesResults.fstateL.map(f=>f.bcoefs)
+      val bcoefficients = thinnedResults.map(f=>f.bcoefs)
       val bcoefMat= DenseMatrix(bcoefficients.map(_.toArray):_*)
       val meanValsBcoef = mean(bcoefMat(::, *))
       println(meanValsBcoef)
 
       println("mu, tau")
-      val mtcoefficients = statesResults.fstateL.map(f=>f.mt)
+      val mtcoefficients = thinnedResults.map(f=>f.mt)
       val mtcoefMat= DenseMatrix(mtcoefficients.map(_.toArray):_*)
       val meanValsmtcoef = mean(mtcoefMat(::, *))
       println(meanValsmtcoef)
 
       println("taus")
-      val tauscoefficients = statesResults.fstateL.map(f=>f.tauabth)
+      val tauscoefficients = thinnedResults.map(f=>f.tauabth)
       val tauscoefMat= DenseMatrix(tauscoefficients.map(_.toArray):_*)
       //val outputFile = new File("/home/antonia/Desktop/tausTry.csv")
       //breeze.linalg.csvwrite(outputFile, tauscoefMat, separator = ',')
@@ -349,19 +346,19 @@ object AsymmetricBothStream {
       println(meanValstauscoef)
 
       println("thetas")
-      val thetascoefficients = statesResults.fstateL.map(f=>f.thcoefs.toDenseVector)
+      val thetascoefficients = thinnedResults.map(f=>f.thcoefs.toDenseVector)
       val thetascoefMat= DenseMatrix(thetascoefficients.map(_.toArray):_*)
       val meanValsthetascoef = mean(thetascoefMat(::, *))
       println(meanValsthetascoef)
 
       println("indicators")
-      val indicscoefficients = statesResults.fstateL.map(f=>f.indics.toDenseVector)
+      val indicscoefficients = thinnedResults.map(f=>f.indics.toDenseVector)
       val indicscoefMat= DenseMatrix(indicscoefficients.map(_.toArray):_*)
       val meanValsindicscoef = mean(indicscoefMat(::, *))
       println(meanValsindicscoef)
 
       println("finalCoefs")
-      val finalcoefficients = statesResults.fstateL.map(f=>f.finalCoefs.toDenseVector)
+      val finalcoefficients = thinnedResults.map(f=>f.finalCoefs.toDenseVector)
       val finalcoefMat= DenseMatrix(finalcoefficients.map(_.toArray):_*)
       val meanValsfinalcoef = mean(finalcoefMat(::, *))
       println(meanValsfinalcoef)
