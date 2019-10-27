@@ -1,6 +1,7 @@
 package mcmc.gibbs
 
 import java.io.File
+import scala.io.StdIn.readLine
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
 import breeze.numerics.{exp, log, pow, sqrt}
@@ -9,7 +10,7 @@ import breeze.stats.mean
 
 object VariableSelection {
 
-  def variableSelection(info: InitialInfo) = {
+  def variableSelection(info: InitialInfo): FullStateList = {
 
     // Initialise case class objects
     val initmt = DenseVector[Double](0.0,1.0)
@@ -70,7 +71,7 @@ object VariableSelection {
   // helper function for alpha coeffs
   def nextAlphaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
 
-    val curAlphaEstim = (DenseVector.zeros[Double](info.alphaLevels))
+    val curAlphaEstim = DenseVector.zeros[Double](info.alphaLevels)
     info.structure.getAllItemsMappedByA().foreach( item => {
       val j = item._1
       val SXalphaj = info.structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
@@ -88,7 +89,7 @@ object VariableSelection {
   // Update beta coefficients
   // helper function for beta coeffs
   def nextBetaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
-    val curBetaEstim = (DenseVector.zeros[Double](info.betaLevels))
+    val curBetaEstim = DenseVector.zeros[Double](info.betaLevels)
     info.structure.getAllItemsMappedByB().foreach( item => {
       val k = item._1
       val SXbetak = info.structure.calcBetaSum(k) // the sum of the observations that have beta==k
@@ -107,8 +108,8 @@ object VariableSelection {
 
   def nextIndicsInters(oldfullState: FullState, info: InitialInfo):FullState= {
 
-    val curIndicsEstim = (DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels))
-    val curThetaEstim = (DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels))
+    val curIndicsEstim = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
+    val curThetaEstim = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     var count = 0.0
 
     info.structure.foreach( item => {
@@ -125,8 +126,8 @@ object VariableSelection {
       val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
       val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
       val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
-      var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
-      val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
+      val newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
+//      val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
 
       if (newProb0 < u) {
         //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
@@ -173,7 +174,7 @@ object VariableSelection {
   def sumBetaEffGivenAlpha(structure: DVStructure, alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
     var sum = 0.0
     structure.getAllItemsForGivenA(alphaIndex).foreach( item => {
-      sum += (item.list.length)*betaEff(item.b)
+      sum += item.list.length * betaEff(item.b)
     })
 
     sum
@@ -185,7 +186,7 @@ object VariableSelection {
   def sumAlphaGivenBeta(structure: DVStructure, betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
     var sum = 0.0
     structure.getAllItemsForGivenB(betaIndex).foreach( item => {
-      sum += (item.list.length)*alphaEff(item.a)
+      sum += item.list.length * alphaEff(item.a)
     })
 
     sum
@@ -265,7 +266,7 @@ object VariableSelection {
   }
 
   // Calculation of the execution time
-  def time[A](f: => A) = {
+  def time[A](f: => A): A = {
     val s = System.nanoTime
     val ret = f
     println("time: " + (System.nanoTime - s) / 1e6 + "ms")
