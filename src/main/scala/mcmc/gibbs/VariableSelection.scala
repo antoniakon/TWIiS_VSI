@@ -17,11 +17,6 @@ object VariableSelection {
 
     val curCount = Array(0.0)
 
-    //Define case classes
-    case class FullState(acoefs: DenseVector[Double], bcoefs: DenseVector[Double], thcoefs: DenseMatrix[Double], indics: DenseMatrix[Double],finalCoefs: DenseMatrix[Double], mt: DenseVector[Double], tauabth: DenseVector[Double])
-
-    case class FullStateList(fstateL: List[FullState])
-
     // Update mu and tau
     // helper function for mu tau
     def nextmutau(oldfullState: FullState): FullState= {
