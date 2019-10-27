@@ -9,165 +9,162 @@ import breeze.stats.mean
 
 object VariableSelection {
 
-  def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int,
-                        alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
-                        a: Double, b: Double, aPrior: Double, bPrior: Double, p: Double) = {
-
-    val njk = alphaLevels * betaLevels // Number of levels of interactions
-
-    val curCount = Array(0.0)
-
-    // Update mu and tau
-    // helper function for mu tau
-    def nextmutau(oldfullState: FullState): FullState= {
-      val prevtau = oldfullState.mt(1)
-      val prevmu = oldfullState.mt(0)
-      val varMu = 1.0 / (tau0 + N * prevtau) //the variance for mu
-      val meanMu = (mu0 * tau0 + prevtau * (SumObs - sumAllMainInterEff(structure, oldfullState.acoefs, oldfullState.bcoefs, alphaLevels, betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
-      val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
-      val newtau = breeze.stats.distributions.Gamma(a + N / 2.0, 1.0 / (b + 0.5 * YminusMuAndEffects(structure, prevmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
-      oldfullState.copy(mt=DenseVector(newmu,newtau))
-    }
-
-    // Update taus (taua, taub, tauInt)
-    // helper function for taus
-    def nexttaus(oldfullState: FullState):FullState= {
-
-      //todo: check if acoef non set values create an issue
-      var sumaj = 0.0
-      oldfullState.acoefs.foreachValue( acoef => {
-        sumaj += pow(acoef - alphaPriorMean, 2)
-      })
-
-      //todo: check if bcoef non set values create an issue
-      var sumbk = 0.0
-      oldfullState.bcoefs.foreachValue( bcoef => {
-        sumbk += pow(bcoef - betaPriorMean, 2)
-      })
-
-      //todo: check if thcoef non set values create an issue
-      var sumThetajk = 0.0
-      oldfullState.thcoefs.foreachValue(thcoef => {
-        sumThetajk += pow(thcoef -thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
-      })
-
-      val newtauAlpha = breeze.stats.distributions.Gamma(aPrior + alphaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
-      val newtauBeta = breeze.stats.distributions.Gamma(aPrior + betaLevels / 2.0, 1.0 / (bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
-      val newtauTheta = breeze.stats.distributions.Gamma(aPrior + njk / 2.0, 1.0 / (bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
-
-      oldfullState.copy(tauabth = DenseVector(newtauAlpha, newtauBeta, newtauTheta))
-    }
-
-    // Update alpha coefficients
-    // helper function for alpha coeffs
-    def nextAlphaCoefs(oldfullState: FullState):FullState={
-
-      val curAlphaEstim = (DenseVector.zeros[Double](alphaLevels))
-      structure.getAllItemsMappedByA().foreach( item => {
-        val j = item._1
-        val SXalphaj = structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
-        val Nj = structure.calcAlphaLength(j) // the number of the observations that have alpha==j
-        val SumBeta = sumBetaEffGivenAlpha(structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
-        val SinterAlpha = sumInterEffGivenAlpha(structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given alpha
-        val varPalpha = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
-        val meanPalpha = (alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
-        curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
-      })
-
-      oldfullState.copy(acoefs = curAlphaEstim)
-    }
-
-    // Update beta coefficients
-    // helper function for beta coeffs
-    def nextBetaCoefs(oldfullState: FullState):FullState={
-      val curBetaEstim = (DenseVector.zeros[Double](betaLevels))
-      structure.getAllItemsMappedByB().foreach( item => {
-        val k = item._1
-        val SXbetak = structure.calcBetaSum(k) // the sum of the observations that have beta==k
-        val Nk = structure.calcBetaLength(k) // the number of the observations that have beta==k
-        val SumAlpha = sumAlphaGivenBeta(structure, k, oldfullState.acoefs)//the sum of the alpha effects given beta
-        val SinterBeta = sumInterEffGivenBeta(structure, k, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given beta
-        val varPbeta = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Nk) //the variance for betak
-        val meanPbeta = (betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
-        curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
-      })
-      oldfullState.copy(bcoefs = curBetaEstim)
-    }
-
-    // Update indicators, interactions and final interaction coefficients
-    //Helper function for indicators and interactions
-    def nextIndicsInters(oldfullState: FullState):FullState= {
-
-      val curIndicsEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
-      val curThetaEstim = (DenseMatrix.zeros[Double](alphaLevels,betaLevels))
-      var count = 0.0
-
-      structure.foreach( item => {
-        val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
-        val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
-
-        val u = breeze.stats.distributions.Uniform(0, 1).draw()
-
-        //log-sum-exp trick
-        val thcoef = oldfullState.thcoefs(item.a, item.b)
-        val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
-        val logProb0 = log(1.0 - p) //The log of the probability I=0
-        val logProb1 = log(p) + logInitExp //The log of the probability I=1
-        val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
-        val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
-        val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
-        var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
-        val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
-
-        if (newProb0 < u) {
-          //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
-          curIndicsEstim(item.a, item.b) = 1.0
-          count += 1.0
-          val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
-          val meanPInter = (thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
-          curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
-        }
-        else {
-          //Update indicator and current interactions if indicator = 0.0
-          curIndicsEstim(item.a,item.b) = 0.0
-          curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(thetaPriorMean, sqrt(1 / oldfullState.tauabth(2))).draw() // sample from the prior of interactions
-        }
-      })
-
-      curCount(0)= count
-      oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
-    }
+  def variableSelection(info: InitialInfo) = {
 
     // Initialise case class objects
     val initmt = DenseVector[Double](0.0,1.0)
     val inittaus = DenseVector[Double](1.0,1.0,1.0)
-    val initAlphaCoefs = DenseVector.zeros[Double](alphaLevels)
-    val initBetaCoefs = DenseVector.zeros[Double](betaLevels)
-    val initThetas = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
-    val initIndics = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
-    val initFinals = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
+    val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels)
+    val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels)
+    val initThetas = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
+    val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
+    val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
 
-    //    def addFullStateToList(fstateList: FullStateList): FullStateList={
-    //      FullStateList(fstate::fstateList)
-    //    }
-    // Calculate the new state
-    @annotation.tailrec
-    def calculateNewState( n:Int, fstate:FullState, fstateList:FullStateList): FullStateList={
-      if (n==0) fstateList
-      else{
-        println(n)
-        val latestmt = nextmutau(fstate)
-        val latesttaus = nexttaus(latestmt)
-        val latestalphas = nextAlphaCoefs(latesttaus)
-        val latestbetas = nextBetaCoefs(latestalphas)
-        val latestFullyUpdatedState = nextIndicsInters(latestbetas)
-        if((n % thin).equals(0)) {
-          calculateNewState(n-1, latestFullyUpdatedState, FullStateList(latestFullyUpdatedState::fstateList.fstateL))
-        }
-        else calculateNewState(n-1, latestFullyUpdatedState, fstateList)
+    calculateNewState(info.noOfIter, info, FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
+  }
+
+  // Update mu and tau
+  // helper function for mu tau
+  def nextmutau(oldfullState: FullState, info: InitialInfo): FullState= {
+    val prevtau = oldfullState.mt(1)
+    val prevmu = oldfullState.mt(0)
+    val varMu = 1.0 / (info.tau0 + info.N * prevtau) //the variance for mu
+    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, info.alphaLevels, info.betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
+    val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
+    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, prevmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+    oldfullState.copy(mt=DenseVector(newmu,newtau))
+  }
+
+  // Update taus (taua, taub, tauInt)
+  // helper function for taus
+  def nexttaus(oldfullState: FullState, info: InitialInfo):FullState= {
+
+    //todo: check if acoef non set values create an issue
+    var sumaj = 0.0
+    oldfullState.acoefs.foreachValue( acoef => {
+      sumaj += pow(acoef - info.alphaPriorMean, 2)
+    })
+
+    //todo: check if bcoef non set values create an issue
+    var sumbk = 0.0
+    oldfullState.bcoefs.foreachValue( bcoef => {
+      sumbk += pow(bcoef - info.betaPriorMean, 2)
+    })
+
+    //todo: check if thcoef non set values create an issue
+    var sumThetajk = 0.0
+    oldfullState.thcoefs.foreachValue(thcoef => {
+      sumThetajk += pow(thcoef -info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
+    })
+
+
+    val njk = info.alphaLevels * info.betaLevels // Number of levels of interactions
+    val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
+    val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
+    val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
+
+    oldfullState.copy(tauabth = DenseVector(newtauAlpha, newtauBeta, newtauTheta))
+  }
+
+  // Update alpha coefficients
+  // helper function for alpha coeffs
+  def nextAlphaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
+
+    val curAlphaEstim = (DenseVector.zeros[Double](info.alphaLevels))
+    info.structure.getAllItemsMappedByA().foreach( item => {
+      val j = item._1
+      val SXalphaj = info.structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
+      val Nj = info.structure.calcAlphaLength(j) // the number of the observations that have alpha==j
+      val SumBeta = sumBetaEffGivenAlpha(info.structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
+      val SinterAlpha = sumInterEffGivenAlpha(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given alpha
+      val varPalpha = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
+      val meanPalpha = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
+      curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
+    })
+
+    oldfullState.copy(acoefs = curAlphaEstim)
+  }
+
+  // Update beta coefficients
+  // helper function for beta coeffs
+  def nextBetaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
+    val curBetaEstim = (DenseVector.zeros[Double](info.betaLevels))
+    info.structure.getAllItemsMappedByB().foreach( item => {
+      val k = item._1
+      val SXbetak = info.structure.calcBetaSum(k) // the sum of the observations that have beta==k
+      val Nk = info.structure.calcBetaLength(k) // the number of the observations that have beta==k
+      val SumAlpha = sumAlphaGivenBeta(info.structure, k, oldfullState.acoefs)//the sum of the alpha effects given beta
+      val SinterBeta = sumInterEffGivenBeta(info.structure, k, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given beta
+      val varPbeta = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Nk) //the variance for betak
+      val meanPbeta = (info.betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
+      curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
+    })
+    oldfullState.copy(bcoefs = curBetaEstim)
+  }
+
+  // Update indicators, interactions and final interaction coefficients
+  //Helper function for indicators and interactions
+
+  def nextIndicsInters(oldfullState: FullState, info: InitialInfo):FullState= {
+
+    val curIndicsEstim = (DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels))
+    val curThetaEstim = (DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels))
+    var count = 0.0
+
+    info.structure.foreach( item => {
+      val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
+      val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
+
+      val u = breeze.stats.distributions.Uniform(0, 1).draw()
+
+      //log-sum-exp trick
+      val thcoef = oldfullState.thcoefs(item.a, item.b)
+      val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
+      val logProb0 = log(1.0 - info.p) //The log of the probability I=0
+      val logProb1 = log(info.p) + logInitExp //The log of the probability I=1
+      val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
+      val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
+      val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
+      var newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
+      val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
+
+      if (newProb0 < u) {
+        //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
+        curIndicsEstim(item.a, item.b) = 1.0
+        count += 1.0
+        val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
+        val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
+        curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
       }
+      else {
+        //Update indicator and current interactions if indicator = 0.0
+        curIndicsEstim(item.a,item.b) = 0.0
+        curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(2))).draw() // sample from the prior of interactions
+      }
+    })
+
+    oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
+  }
+
+  //    def addFullStateToList(fstateList: FullStateList): FullStateList={
+  //      FullStateList(fstate::fstateList)
+  //    }
+  // Calculate the new state
+  @annotation.tailrec
+  def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList={
+    if (n==0) fstateList
+    else{
+      println(n)
+      val latestmt = nextmutau(fstate, info)
+      val latesttaus = nexttaus(latestmt, info)
+      val latestalphas = nextAlphaCoefs(latesttaus, info)
+      val latestbetas = nextBetaCoefs(latestalphas, info)
+      val latestFullyUpdatedState = nextIndicsInters(latestbetas, info)
+      if((n % info.thin).equals(0)) {
+        calculateNewState(n-1, info, latestFullyUpdatedState, FullStateList(latestFullyUpdatedState::fstateList.fstateL))
+      }
+      else calculateNewState(n-1, info, latestFullyUpdatedState, fstateList)
     }
-    calculateNewState(noOfIter, FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
   }
 
   /**
@@ -305,12 +302,13 @@ object VariableSelection {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
 
+    val initialInfo = InitialInfo(noOfIters, thin, sampleSize, sumObs, structure, alphaLevels, betaLevels,
+      alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
+      a, b, aPrior, bPrior, p)
+
     val statesResults =
       time(
-        variableSelection(
-          noOfIters, thin, sampleSize, sumObs, structure, alphaLevels, betaLevels,
-          alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
-          a, b, aPrior, bPrior, p)
+        variableSelection(initialInfo)
       )
     println("alphas")
     val acoefficients= statesResults.fstateL.map(f=>f.acoefs)
@@ -364,4 +362,3 @@ object VariableSelection {
   }
 
 }
-
