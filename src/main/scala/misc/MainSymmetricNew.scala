@@ -5,6 +5,7 @@ import java.io.File
 import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
 import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
+import structure.{DVStructure, DVStructureMap}
 
 object MainSymmetricNew {
   def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int, zetaLevels: Int, alphaLevelsDist: Int, betaLevelsDist: Int,

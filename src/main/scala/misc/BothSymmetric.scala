@@ -5,6 +5,7 @@ import java.io.File
 import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
 import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
+import structure.{DVStructure, DVStructureMap}
 
 object BothSymmetric {
 

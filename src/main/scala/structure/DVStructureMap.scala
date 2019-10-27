@@ -1,4 +1,4 @@
-package misc
+package structure
 
 import breeze.linalg.{DenseVector, max}
 
