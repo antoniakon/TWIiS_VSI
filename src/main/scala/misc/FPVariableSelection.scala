@@ -1,17 +1,17 @@
+package misc
+
 import java.io.File
 
-import breeze.linalg.{*, _}
-import breeze.numerics._
+import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
+import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
-
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by Antonia Kontaratou.
   * Variable selection for interaction terms. Assume that all the main effects are present, otherwise you end up with a model containing an interaction involving a variable for which there is no main effect.
   * Main + interaction effects are estimated as random effects to solve the identifiability problem.
   * Model: Xijk|mu,aj,bk,gjk,Ijk tau~N(mu+aj+bk+Ijk*gjk,tau^-1)
-  */
+  **/
 
 object FPVariableSelection {
 

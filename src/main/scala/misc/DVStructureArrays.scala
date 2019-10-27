@@ -1,3 +1,5 @@
+package misc
+
 import breeze.linalg.DenseVector
 
 import scala.collection.mutable.ListBuffer

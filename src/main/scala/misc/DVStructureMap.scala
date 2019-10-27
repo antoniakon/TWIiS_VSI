@@ -1,17 +1,36 @@
+package misc
+
 import breeze.linalg.{DenseVector, max}
 
 class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
-  private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
+
 
   val alphaLevels = alpha.toArray.distinct.length
   val betaLevels = beta.toArray.distinct.length
   val zetaLevels = max(alphaLevels, betaLevels)
   private val newStructure = scala.collection.mutable.Map[Int,  Map[(Int, Int), DVList]]()
+  private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
 
+  //private val myStructure: TreeMap[(Int, Int), DVList] = initMap()
   init()
   getAllItemsMappedByZ()
   println(newStructure)
+
+//  private def initMap(): TreeMap[(Int, Int), DVList] = {
+//    val tempMap = new scala.collection.mutable.TreeMap[(Int, Int), DVList]()
+//
+//    for (i <- 0 until y.length) {
+//      tempMap.get(alpha(i), beta(i)) match {
+//        case None    => tempMap += ((alpha(i), beta(i)) -> new DVList())
+//        case Some(value) => // do nothing
+//      }
+//
+//      tempMap((alpha(i), beta(i))).addItem(y(i))
+//    }
+//
+//    new TreeMap[(Int, Int), DVList]() ++ tempMap
+//  }
 
   private def init(): Unit = {
     for (i <- 0 until y.length) {

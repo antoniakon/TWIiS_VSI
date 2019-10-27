@@ -1,17 +1,17 @@
+package misc
+
 import java.io.File
 
-import breeze.linalg.{*, _}
-import breeze.numerics._
+import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
+import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
-
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by Antonia Kontaratou.
   * Variable selection for interaction terms. Assume that all the main effects are present, otherwise you end up with a model containing an interaction involving a variable for which there is no main effect.
   * Main + interaction effects are estimated as random effects to solve the identifiability problem.
   * Model: Xijk|mu,aj,bk,gjk,Ijk tau~N(mu+aj+bk+Ijk*gjk,tau^-1)
-  */
+  **/
 
 object VariableSelection {
 
@@ -279,7 +279,7 @@ object VariableSelection {
     readLine()
 
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/100919_15x20/Data/simulInter100919.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/simulInterAsymmetricBoth.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -289,7 +289,7 @@ object VariableSelection {
 
     // Parameters
     val noOfIters = 100000
-    val thin = 100
+    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -343,7 +343,7 @@ object VariableSelection {
     // Save the results to a csv file
     val includedM= included_est.toDenseMatrix
     val mergedMatrix = DenseMatrix.vertcat(muTau_est, taus_est, alpha_estInter, beta_estInter, interacs_est, indics_est,includedM)
-    val outputFIle = new File("/home/antonia/ResultsFromCloud/Report/100919_15x20/Scala/1M/scalaRes1MAfterStr.csv")
+    val outputFIle = new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaMCMCRes.csv")
     breeze.linalg.csvwrite(outputFIle, mergedMatrix, separator = ',')
 
 

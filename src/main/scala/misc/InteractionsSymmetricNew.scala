@@ -1,7 +1,9 @@
+package misc
+
 import java.io.File
-import breeze.linalg.{*, _}
-import breeze.numerics._
-import cats._
+
+import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
+import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
 
 object InteractionsSymmetricNew {
@@ -323,7 +325,7 @@ object InteractionsSymmetricNew {
     readLine()
 
     // Read the data
-    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricInters/simulInterSymmetricInters.csv"))
+    val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/symmetricInters/simulInterSymmetricInters.csv"))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -417,10 +419,9 @@ object InteractionsSymmetricNew {
     println(meanValsfinalcoef)
 
     // Save the results to a csv file
-    val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, acoefMat, bcoefMat, finalcoefMat, indicscoefMat)
-    val outputFile = new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricInters/symmetricInteractionsScalaRes.csv")
-    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
+//    val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, acoefMat, bcoefMat, finalcoefMat, indicscoefMat)
+//    val outputFile = new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/symmetricInters/symmetricInteractionsScalaRes.csv")
+//    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
   }
 
 }
-

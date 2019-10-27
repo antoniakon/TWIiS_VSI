@@ -1,7 +1,9 @@
+package misc
+
 import java.io.File
-import breeze.linalg.{*, _}
-import breeze.numerics._
-import cats._
+
+import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
+import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
 
 object BothSymmetric {
@@ -252,7 +254,7 @@ object BothSymmetric {
       readLine()
 
       // Read the data
-      val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricBoth/simulInterSymmetricBoth.csv"))
+      val data = csvread(new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/symmetricBoth/simulInterSymmetricBoth.csv"))
       val sampleSize = data.rows
       val y = data(::, 0)
       val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -341,7 +343,7 @@ object BothSymmetric {
 
       // Save the results to a csv file
       val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, zcoefMat, finalcoefMat, indicscoefMat)
-      val outputFile = new File("/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricBoth/symmetricBothScalaMCMCRes.csv")
+      val outputFile = new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/symmetricBoth/symmetricBothScalaMCMCRes.csv")
       breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
     }
 
