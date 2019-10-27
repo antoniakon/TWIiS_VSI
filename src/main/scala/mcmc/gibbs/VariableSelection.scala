@@ -1,17 +1,13 @@
-/**
-  * Created by Antonia Kontaratou.
-  * Variable selection for interaction terms. Assume that all the main effects are present, otherwise you end up with a model containing an interaction involving a variable for which there is no main effect.
-  * Main + interaction effects are estimated as random effects to solve the identifiability problem.
-  * Model: Xijk|mu,aj,bk,gjk,Ijk tau~N(mu+aj+bk+Ijk*gjk,tau^-1)
-  */
+package mcmc.gibbs
+
 import java.io.File
 
-import breeze.linalg.{*, _}
-import breeze.numerics._
-import cats._
+import breeze.linalg.{*, DenseMatrix, DenseVector, csvread, max}
+import breeze.numerics.{exp, log, pow, sqrt}
+import structure.{DVStructure, DVStructureMap}
 import breeze.stats.mean
 
-object FPStateMonadVS {
+object VariableSelection {
 
   def variableSelection(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int,
                         alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
@@ -53,7 +49,7 @@ object FPStateMonadVS {
       oldfullState.bcoefs.foreachValue( bcoef => {
         sumbk += pow(bcoef - betaPriorMean, 2)
       })
-      
+
       //todo: check if thcoef non set values create an issue
       var sumThetajk = 0.0
       oldfullState.thcoefs.foreachValue(thcoef => {
@@ -156,14 +152,15 @@ object FPStateMonadVS {
     val initIndics = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
     val initFinals = DenseMatrix.zeros[Double](alphaLevels,betaLevels)
 
-//    def addFullStateToList(fstateList: FullStateList): FullStateList={
-//      FullStateList(fstate::fstateList)
-//    }
+    //    def addFullStateToList(fstateList: FullStateList): FullStateList={
+    //      FullStateList(fstate::fstateList)
+    //    }
     // Calculate the new state
     @annotation.tailrec
     def calculateNewState( n:Int, fstate:FullState, fstateList:FullStateList): FullStateList={
       if (n==0) fstateList
       else{
+        println(n)
         val latestmt = nextmutau(fstate)
         val latesttaus = nexttaus(latestmt)
         val latestalphas = nextAlphaCoefs(latesttaus)
@@ -294,7 +291,7 @@ object FPStateMonadVS {
     val sumObs = y.toArray.sum // Sum of the values of all the observations
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
-//    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
+    //    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
     val structure : DVStructure = new DVStructureMap(y, alpha, beta)
     val alphaLevels = alpha.toArray.distinct.length
     val betaLevels = beta.toArray.distinct.length
@@ -364,7 +361,12 @@ object FPStateMonadVS {
     val finalcoefMat= DenseMatrix(finalcoefficients.map(_.toArray):_*)
     val meanValsfinalcoef = mean(finalcoefMat(::, *))
     println(meanValsfinalcoef)
- }
+
+    // Save the results to a csv file
+    //    val mergedMatrix = DenseMatrix.horzcat(mtcoefMat, tauscoefMat, acoefMat, bcoefMat, finalcoefMat, indicscoefMat)
+    //    val outputFile = new File("/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaRes.csv")
+    //    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
+  }
 
 }
 
