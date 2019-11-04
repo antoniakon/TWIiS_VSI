@@ -8,7 +8,7 @@ import breeze.numerics.{exp, log, pow, sqrt}
 import structure.{DVStructure, DVStructureMap}
 import breeze.stats.mean
 
-object AsymmetricBoth extends VariableSelection {
+class AsymmetricBoth extends VariableSelection {
 
   override def variableSelection(info: InitialInfo): FullStateList = {
 
@@ -266,9 +266,10 @@ object AsymmetricBoth extends VariableSelection {
     val matrices = calculateAndPrintCommons(statesResults)
 
     // Save the results to a csv file
-    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
-    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaRes.csv")
+//    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
+//    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaRes.csv")
   }
 
   override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/Symmetric/asymmetricBoth/simulInterAsymmetricBoth.csv"
+
 }

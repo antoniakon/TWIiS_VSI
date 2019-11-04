@@ -7,6 +7,6 @@ case class FullState(acoefs: DenseVector[Double], bcoefs: DenseVector[Double], t
 
 case class FullStateList(fstateL: List[FullState])
 
-case class InitialInfo(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, alphaLevels: Int, betaLevels: Int,
+case class InitialInfo(noOfIter: Int, thin: Int, N: Int, SumObs: Double, structure: DVStructure, structureSorted: DVStructure, alphaLevels: Int, betaLevels: Int, zetaLevels: Int, noOfInters: Int, sizeOfDouble: Int,
                        alphaPriorMean: Double, betaPriorMean: Double, thetaPriorMean: Double, mu0: Double, tau0: Double,
                        a: Double, b: Double, aPrior: Double, bPrior: Double, p: Double)
