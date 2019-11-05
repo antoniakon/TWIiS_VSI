@@ -195,6 +195,6 @@ class SymmetricMain extends VariableSelection {
     //    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaRes.csv")
   }
 
-  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/Symmetric/SymmetricMain/simulInterSymmetricMain.csv"
+  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricMain/simulInterSymmetricMain.csv"
 
 }

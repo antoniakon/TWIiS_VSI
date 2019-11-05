@@ -72,12 +72,12 @@ object MainRunner {
       )
     varSelectionObject.printResults(statesResults)
   }
-
-
+  
   private def getVariableSelectionVariant() : VariableSelection = {
     object myAsymmetricBoth extends AsymmetricBoth
     object mySymmetricInters extends SymmetricInters
     object mySymmetricMain extends SymmetricMain
+    object mySymmetricBoth extends SymmetricBoth
     myAsymmetricBoth
 
   }
