@@ -17,11 +17,12 @@ class AsymmetricBoth extends VariableSelection {
     val inittaus = DenseVector[Double](1.0,1.0,1.0)
     val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels)
     val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels)
+    val initZetaCoefs = DenseVector.zeros[Double](info.zetaLevels)
     val initThetas = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
 
-    calculateNewState(info.noOfIter, info, FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
+    calculateNewState(info.noOfIter, info, FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
   }
 
   // Update mu and tau

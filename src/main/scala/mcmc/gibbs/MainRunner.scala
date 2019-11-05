@@ -44,6 +44,9 @@ object MainRunner {
     val zetaLevels = max(alphaLevels, betaLevels)
     println(zetaLevels)
     val sizeofDouble = structure.sizeOfDouble()
+    //Used for SymmetricMain
+    val alphaLevelsDist = alpha.toArray.distinct.length
+    val betaLevelsDist = beta.toArray.distinct.length
 
     // Parameters
     val noOfIters = 10
@@ -59,7 +62,7 @@ object MainRunner {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
 
-    val initialInfo = InitialInfo(noOfIters, thin, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble,
+    val initialInfo = InitialInfo(noOfIters, thin, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
       a, b, aPrior, bPrior, p)
 
@@ -74,6 +77,7 @@ object MainRunner {
   private def getVariableSelectionVariant() : VariableSelection = {
     object myAsymmetricBoth extends AsymmetricBoth
     object mySymmetricInters extends SymmetricInters
+    object mySymmetricMain extends SymmetricMain
     myAsymmetricBoth
 
   }
