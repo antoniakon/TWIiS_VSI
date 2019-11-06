@@ -60,7 +60,7 @@ class AsymmetricBoth extends VariableSelection {
     })
 
 
-    val njk = info.alphaLevels * info.betaLevels // Number of levels of interactions
+    val njk = info.alphaLevelsDist * info.betaLevelsDist // Number of levels of interactions
     val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
     val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
@@ -267,10 +267,10 @@ class AsymmetricBoth extends VariableSelection {
     val matrices = calculateAndPrintCommons(statesResults)
 
     // Save the results to a csv file
-//    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
-//    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaRes.csv")
+    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
+    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth/asymmetricBothScalaRes.csv")
   }
 
-  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/Symmetric/asymmetricBoth/simulInterAsymmetricBoth.csv"
+  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth/simulInterAsymmetricBoth.csv"
 
 }
