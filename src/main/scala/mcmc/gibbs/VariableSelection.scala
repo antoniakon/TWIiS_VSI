@@ -67,8 +67,8 @@ abstract class VariableSelection {
   }
 
   protected final def saveToCSV(mergedMatrix: DenseMatrix[Double], filename: String): Unit = {
-//    val outputFile = new File(filename)
-//    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
+    val outputFile = new File(filename)
+    breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
   }
 
   // Calculation of the execution time

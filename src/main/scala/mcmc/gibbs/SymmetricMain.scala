@@ -191,10 +191,10 @@ class SymmetricMain extends VariableSelection {
     val matrices = calculateAndPrintCommons(statesResults)
 
     // Save the results to a csv file
-    //    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), zcoefMat, matrices(2), matrices(3))
-    //    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricOct/asymmetricBoth/asymmetricBothScalaRes.csv")
+        val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), zcoefMat, matrices(2), matrices(3))
+        saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricBoth/symmetricBothScalaRes.csv")
   }
 
-  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricMain/simulInterSymmetricMain.csv"
+  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricBoth/simulBothSymmetricMain.csv"
 
 }

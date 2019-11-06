@@ -125,5 +125,5 @@ class SymmetricInters extends AsymmetricBoth {
     })
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
   }
-  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/Symmetric/symmetricInters/simulInterSymmetricInters.csv"
+  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricInters/simulInterSymmetricInters.csv"
 }

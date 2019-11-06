@@ -49,8 +49,8 @@ object MainRunner {
     val betaLevelsDist = beta.toArray.distinct.length
 
     // Parameters
-    val noOfIters = 10
-    val thin = 1
+    val noOfIters = 100000
+    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
