@@ -13,8 +13,8 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
   val zetaLevels = max(alphaLevels, betaLevels)
   private val newStructure = scala.collection.mutable.Map[Int,  Map[(Int, Int), DVList]]()
   private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
-  private val alphaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
-  private val betaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
+  private val alphaIndices = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(Int, Int)]]()
+  private val betaIndices = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(Int, Int)]]()
 
   //private val myStructure: TreeMap[(Int, Int), DVList] = initMap()
   init()
@@ -42,13 +42,13 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
       val curBeta = beta(i)
 
       alphaIndices.get(curAlpha) match {
-        case None => alphaIndices += curAlpha -> ListBuffer[(Int, Int)]( (curAlpha, curBeta) )
-        case Some(value) => value += ( (curAlpha, curBeta) )
+        case None => alphaIndices += curAlpha -> scala.collection.mutable.Set[(Int, Int)]( (curAlpha, curBeta) )
+        case Some(value) => value += ( (curAlpha, curBeta) ) //could already exist but relying on Set to not have duplicates
       }
 
       betaIndices.get(curBeta) match {
-        case None => betaIndices += curBeta -> ListBuffer[(Int, Int)]( (curAlpha, curBeta) )
-        case Some(value) => value += ( (curAlpha, curBeta) )
+        case None => betaIndices += curBeta -> scala.collection.mutable.Set[(Int, Int)]( (curAlpha, curBeta) )
+        case Some(value) => value += ( (curAlpha, curBeta) ) //could already exist but relying on Set to not have duplicates
       }
 
       myStructure.get(curAlpha, curBeta) match {
@@ -67,9 +67,16 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
     var sum = 0.0
     myStructure.foreach( item =>
       if (item._1._1 == j) {
+//        println("--(" + item._1 + ", " + item._2 + ")--")
         sum = sum + item._2.sum
       }
     )
+    println("---------")
+    println(sum)
+    println(alphaIndices(j).map(tuple => myStructure(tuple).sum).sum)
+
+//    alphaIndices(j).map(tuple => myStructure(tuple).sum).sum
+    println("---------")
     sum
   }
 
