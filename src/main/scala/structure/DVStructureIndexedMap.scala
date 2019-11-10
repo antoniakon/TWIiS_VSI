@@ -2,6 +2,8 @@ package structure
 
 import breeze.linalg.{DenseVector, max}
 
+import scala.collection.mutable.ListBuffer
+
 class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
 
@@ -11,6 +13,8 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
   val zetaLevels = max(alphaLevels, betaLevels)
   private val newStructure = scala.collection.mutable.Map[Int,  Map[(Int, Int), DVList]]()
   private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
+  private val alphaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
+  private val betaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
 
   //private val myStructure: TreeMap[(Int, Int), DVList] = initMap()
   init()
@@ -34,12 +38,25 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
 
   private def init(): Unit = {
     for (i <- 0 until y.length) {
-      myStructure.get(alpha(i), beta(i)) match {
-        case None    => myStructure += ((alpha(i), beta(i)) -> new DVList())
+      val curAlpha = alpha(i)
+      val curBeta = beta(i)
+
+      alphaIndices.get(curAlpha) match {
+        case None => alphaIndices += curAlpha -> ListBuffer[(Int, Int)]( (curAlpha, curBeta) )
+        case Some(value) => value += ( (curAlpha, curBeta) )
+      }
+
+      betaIndices.get(curBeta) match {
+        case None => betaIndices += curBeta -> ListBuffer[(Int, Int)]( (curAlpha, curBeta) )
+        case Some(value) => value += ( (curAlpha, curBeta) )
+      }
+
+      myStructure.get(curAlpha, curBeta) match {
+        case None    => myStructure += ((curAlpha, curBeta) -> new DVList())
         case Some(value) => // do nothing
       }
 
-      myStructure((alpha(i), beta(i))).addItem(y(i))
+      myStructure((curAlpha, curBeta)).addItem(y(i))
     }
   }
 
