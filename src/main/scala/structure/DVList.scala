@@ -17,7 +17,7 @@ class DVList {
     list.sum
   }
 
-  def length: Int= {
+  def length: Double= {
     list.length
   }
 
