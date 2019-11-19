@@ -122,15 +122,25 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
   }
 
   override def getAllItemsForGivenA(a: Int): List[DVItem] = {
-    alphaIndices(a)
-      .map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
-      .toList
+    val ifaexists = alphaIndices.get(a)
+    val res = ifaexists match {
+      case Some(tups) =>
+        tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
+          .toList
+      case None => List[DVItem]()
+    }
+    res
   }
 
   override def getAllItemsForGivenB(b: Int): List[DVItem] = {
-    betaIndices(b)
-      .map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
-      .toList
+    val ifbexists = betaIndices.get(b)
+    val res = ifbexists match {
+      case Some(tups) =>
+        tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
+          .toList
+      case None => List[DVItem]()
+    }
+    res
   }
 
   override def getAllItemsMappedByA(): Map[Int, List[DVItem]] = {
