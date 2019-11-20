@@ -162,8 +162,7 @@ class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: Dens
     * Calculates the sum of the response y for a given zeta, not include the cases where k==j
     */
   override def calcZetaSum(zj: Int): Double = {
-    //toDo: check flatten after map instead of flatMap. if it give
-    getAllOtherZetasItemsForGivenZ(zj)
+    newStructure(zj)
       .map(elem => elem._2.sum)
       .reduce(_+_)
 
@@ -173,14 +172,13 @@ class DVStructureMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: Dens
     * Calculates the number of the responses y for a given zeta
     */
   override def calcZetaLength(zj: Int): Double = {
-    getAllOtherZetasItemsForGivenZ(zj)
+    newStructure(zj)
       .map(elem => elem._2.length)
       .reduce(_+_)
   }
 
   override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
-    newStructure
-      .filterKeys(k => k==z).flatMap(elem => elem._2).toMap
+    newStructure(z)
   }
 
   private def getAllItemsMappedByZ(): Unit = {

@@ -155,8 +155,7 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
     * Calculates the sum of the response y for a given zeta, not include the cases where k==j
     */
   override def calcZetaSum(zj: Int): Double = {
-    //toDo: check flatten after map instead of flatMap. if it give
-    getAllOtherZetasItemsForGivenZ(zj)
+    newStructure(zj)
       .map(elem => elem._2.sum)
       .reduce(_+_)
 
@@ -166,18 +165,14 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
     * Calculates the number of the responses y for a given zeta
     */
   override def calcZetaLength(zj: Int): Double = {
-    getAllOtherZetasItemsForGivenZ(zj)
+    newStructure(zj)
       .map(elem => elem._2.length)
       .reduce(_+_)
   }
 
-  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
-    newStructure
-      .filterKeys(k => k==z).flatMap(elem => elem._2).toMap
-  }
+  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = newStructure(z)
 
   private def getAllItemsMappedByZ(): Unit = {
-
     for (i <- 0 until zetaLevels) {
       val selectedItems = myStructure.filterKeys(key => (key._1 == i || key._2 == i) && !(key._1 == i && key._2 == i)).toMap
       newStructure.get(i) match {
@@ -185,7 +180,6 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
         case Some(value) => newStructure += (i -> selectedItems)
       }
     }
-
   }
 
   override def sizeOfStructure():Int = myStructure.keys.size
