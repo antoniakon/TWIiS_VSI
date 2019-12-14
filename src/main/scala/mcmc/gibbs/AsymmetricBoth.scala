@@ -268,7 +268,11 @@ class AsymmetricBoth extends VariableSelection {
 
     // Save the results to a csv file
     val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
-    saveToCSV(mergedMatrix, "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth/asymmetricBothScalaRes.csv")
+    saveToCSV(mergedMatrix, getFileNameToSaveResults)
+  }
+
+  override protected def getFileNameToSaveResults = {
+    "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth/asymmetricBoth10mScalaRes.csv"
   }
 
   override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth/simulInterAsymmetricBoth.csv"

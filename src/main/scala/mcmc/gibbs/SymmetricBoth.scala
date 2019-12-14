@@ -119,6 +119,11 @@ class SymmetricBoth extends SymmetricMain {
 
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
   }
+
+  override protected def getFileNameToSaveResults = {
+    "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricBoth/symmetricBoth10mScalaRes.csv"
+  }
+
   override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricBoth/simulInterSymmetricBoth.csv"
 
 }
