@@ -13,7 +13,7 @@ abstract class VariableSelection {
   protected def nextCoefs(oldfullState: FullState, info: InitialInfo):FullState
   protected def nextIndicsInters(oldfullState: FullState, info: InitialInfo):FullState
   def printResults(statesResults: FullStateList): Unit
-  protected def getFileNameToSaveResults(): String
+  protected def getFileNameToSaveResults(param: String): String
 
   @annotation.tailrec
   protected final def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList = {
