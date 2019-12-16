@@ -49,8 +49,8 @@ object MainRunner {
     val betaLevelsDist = beta.toArray.distinct.length
 
     // Parameters
-    val noOfIters = 10000
-    val thin = 10
+    val noOfIters = 1000000
+    val thin = 100
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -72,13 +72,13 @@ object MainRunner {
       )
     varSelectionObject.printResults(statesResults)
   }
-  
+
   private def getVariableSelectionVariant() : VariableSelection = {
     object myAsymmetricBoth extends AsymmetricBoth
     object mySymmetricInters extends SymmetricInters
     object mySymmetricMain extends SymmetricMain
     object mySymmetricBoth extends SymmetricBoth
-    myAsymmetricBoth
+    mySymmetricMain
 
   }
 

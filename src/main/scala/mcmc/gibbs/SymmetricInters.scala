@@ -127,7 +127,7 @@ class SymmetricInters extends AsymmetricBoth {
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricInters/symmetricInters1mScalaRes-"
+    val filePath = getMainFilePath.concat("/symmetricInters1mScalaRes-")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
       "taus" -> filePath.concat("taus.csv"),
       "alphas" -> filePath.concat("alphas.csv"),
@@ -138,5 +138,5 @@ class SymmetricInters extends AsymmetricBoth {
     pathToFiles(param)
   }
 
-  override def getInputFilePath(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricInters/simulInterSymmetricInters.csv"
+  override def getInputFilePath(): String = getMainFilePath.concat("/simulInterSymmetricInters.csv")
 }

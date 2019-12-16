@@ -72,6 +72,10 @@ abstract class VariableSelection {
     breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
   }
 
+  protected def getMainFilePath() : String ={
+    "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
+  }
+
   // Calculation of the execution time
   final def time[A](f: => A): A = {
     val s = System.nanoTime
