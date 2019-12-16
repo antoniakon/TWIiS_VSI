@@ -1,6 +1,6 @@
 package mcmc.gibbs
 
-import java.io.File
+import java.io._
 
 import breeze.linalg.{*, DenseMatrix, csvread}
 import breeze.stats.mean
@@ -76,7 +76,12 @@ abstract class VariableSelection {
   final def time[A](f: => A): A = {
     val s = System.nanoTime
     val ret = f
-    println("time: " + (System.nanoTime - s) / 1e6 + "ms")
+    val execTime = (System.nanoTime - s) / 1e6
+    println("time: " + execTime + "ms")
+    val file = new File(getMainFilePath.concat("/ScalaRuntime.txt"))
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(execTime.toString)
+    bw.close()
     ret
   }
 
