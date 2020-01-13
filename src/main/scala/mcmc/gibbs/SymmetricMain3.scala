@@ -98,7 +98,7 @@ class SymmetricMain3 extends VariableSelection {
 
       //log-sum-exp trick
       val thcoef = oldfullState.thcoefs(item.a, item.b)
-      val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
+      val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.zcoefs(item.a) + oldfullState.zcoefs(item.b) + 0.5 * thcoef))
       val logProb0 = log(1.0 - info.p) //The log of the probability I=0
       val logProb1 = log(info.p) + logInitExp //The log of the probability I=1
       val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
@@ -112,7 +112,7 @@ class SymmetricMain3 extends VariableSelection {
         curIndicsEstim(item.a, item.b) = 1.0
         count += 1.0
         val varPInter = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Njk) //the variance for gammajk
-        val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
+        val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.zcoefs(item.a) + oldfullState.zcoefs(item.b)))) * varPInter
         curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
       }
       else {
