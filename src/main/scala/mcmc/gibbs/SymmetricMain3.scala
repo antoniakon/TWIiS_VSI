@@ -59,44 +59,26 @@ class SymmetricMain3 extends VariableSelection {
   }
 
   override def nextCoefs(oldfullState: FullState, info: InitialInfo): FullState = {
-    val latestAlphaCoefs = nextAlphaCoefs(oldfullState, info)
-    nextBetaCoefs(latestAlphaCoefs, info)
+    nextZetaCoefs(oldfullState, info)
   }
 
   // Update alpha coefficients
   // helper function for alpha coeffs
-  def nextAlphaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
+  def nextZetaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
 
-    val curAlphaEstim = DenseVector.zeros[Double](info.alphaLevels)
-    info.structure.getAllItemsMappedByA().foreach( item => {
-      val j = item._1
-      val SXalphaj = info.structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
-      val Nj = info.structure.calcAlphaLength(j) // the number of the observations that have alpha==j
-      val SumBeta = sumBetaEffGivenAlpha(info.structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
-      val SinterAlpha = sumInterEffGivenAlpha(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given alpha
-      val varPalpha = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
-      val meanPalpha = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
-      curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
+    val curZetaEstim = DenseVector.zeros[Double](info.zetaLevels)
+    (0 until info.zetaLevels).foreach( item => { //For each existing? zeta
+      val j = item
+      val SXZetaj = info.structure.calcZetaSum(j) // the sum of the observations that have zeta == j on either side
+      val Nj = info.structure.calcZetaLength(j) // the number of the observations that have zeta == j on either side
+      val SumZeta = sumEffectsOfOtherZetas(info.structure, j, oldfullState.zcoefs) //the sum of the other zeta effects given zeta
+      val SinterZeta = sumInterEffGivenZeta(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given alpha
+      val varPzeta = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
+      val meanPzeta = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXZetaj - Nj * oldfullState.mt(0) - SumZeta - SinterZeta)) * varPzeta //the mean for alphaj
+      curZetaEstim(j) = breeze.stats.distributions.Gaussian(meanPzeta, sqrt(varPzeta)).draw()
     })
 
-    oldfullState.copy(acoefs = curAlphaEstim)
-  }
-
-  // Update beta coefficients
-  // helper function for beta coeffs
-  def nextBetaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
-    val curBetaEstim = DenseVector.zeros[Double](info.betaLevels)
-    info.structure.getAllItemsMappedByB().foreach( item => {
-      val k = item._1
-      val SXbetak = info.structure.calcBetaSum(k) // the sum of the observations that have beta==k
-      val Nk = info.structure.calcBetaLength(k) // the number of the observations that have beta==k
-      val SumAlpha = sumAlphaGivenBeta(info.structure, k, oldfullState.acoefs)//the sum of the alpha effects given beta
-      val SinterBeta = sumInterEffGivenBeta(info.structure, k, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given beta
-      val varPbeta = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Nk) //the variance for betak
-      val meanPbeta = (info.betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
-      curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
-    })
-    oldfullState.copy(bcoefs = curBetaEstim)
+    oldfullState.copy(acoefs = curZetaEstim)
   }
 
   // Update indicators, interactions and final interaction coefficients
@@ -129,14 +111,14 @@ class SymmetricMain3 extends VariableSelection {
         //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
         curIndicsEstim(item.a, item.b) = 1.0
         count += 1.0
-        val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
-        val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
+        val varPInter = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Njk) //the variance for gammajk
+        val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
         curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
       }
       else {
         //Update indicator and current interactions if indicator = 0.0
         curIndicsEstim(item.a,item.b) = 0.0
-        curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(2))).draw() // sample from the prior of interactions
+        curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
       }
     })
 
@@ -144,28 +126,18 @@ class SymmetricMain3 extends VariableSelection {
   }
 
   /**
-    * Add all the beta effects for a given alpha.
+    * Add all the zeta effects for all the other zetas for that specific zeta.
+    * e.g. updating z1: (1,1),(1,2),(2,1),(1,3),(1,4),(4,1) => Sum the effects for: z1(for the 1rst pair) + z2 + z2 + z3 + z4 + z4
     */
-  def sumBetaEffGivenAlpha(structure: DVStructure, alphaIndex: Int, betaEff: DenseVector[Double]): Double = {
-    var sum = 0.0
-    structure.getAllItemsForGivenA(alphaIndex).foreach( item => {
-      sum += item.list.length * betaEff(item.b)
-    })
-
-    sum
+  def sumEffectsOfOtherZetas(structure: DVStructure, zetaIndex: Int, zetaEff: DenseVector[Double]): Double = {
+    //returns the element which is not zetaIndex. In case we have double zetaIndex returns just zetaIndex
+    def notZeta(k1: Int, k2: Int): Int={
+      if(k1!=zetaIndex) k1
+      else k2
+    }
+    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length*zetaEff(notZeta(elem._1._1, elem._1._2))).reduce(_+_)
   }
 
-  /**
-    * Add all the alpha effects for a given beta.
-    */
-  def sumAlphaGivenBeta(structure: DVStructure, betaIndex: Int, alphaEff: DenseVector[Double]): Double = {
-    var sum = 0.0
-    structure.getAllItemsForGivenB(betaIndex).foreach( item => {
-      sum += item.list.length * alphaEff(item.a)
-    })
-
-    sum
-  }
   /**
     * Calculate the sum of all the zeta 1 and all the zeta 2 effects for all the observations.
     */
@@ -195,25 +167,8 @@ class SymmetricMain3 extends VariableSelection {
   /**
     * Add all the interaction effects for a given alpha.
     */
-  def sumInterEffGivenAlpha(structure: DVStructure, alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    var sum = 0.0
-    structure.getAllItemsForGivenA(alphaIndex).foreach( item => {
-      sum += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
-    })
-
-    sum
-  }
-
-  /**
-    * Add all the interaction effects for a given beta.
-    */
-  def sumInterEffGivenBeta(structure: DVStructure, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    var sum = 0.0
-    structure.getAllItemsForGivenB(betaIndex).foreach( item => {
-      sum += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
-    })
-
-    sum
+  def sumInterEffGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length* indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
   }
 
   /**
