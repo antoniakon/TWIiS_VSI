@@ -12,12 +12,12 @@ class SymmetricMain3 extends VariableSelection {
     // Initialise case class objects
     val initmt = DenseVector[Double](0.0,1.0)
     val inittaus = DenseVector[Double](1.0,1.0,1.0)
-    val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels)
-    val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels)
+    val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels) //Not used in SymmetricMain implementation
+    val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels) //Not used in SymmetricMain implementation
     val initZetaCoefs = DenseVector.zeros[Double](info.zetaLevels)
-    val initThetas = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
-    val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
-    val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
+    val initThetas = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels) //zetaLevels in SymmetricMain implementation
+    val initIndics = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels) //zetaLevels in SymmetricMain implementation
+    val initFinals = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels) //zetaLevels in SymmetricMain implementation
 
     calculateNewState(info.noOfIter, info, FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
   }
