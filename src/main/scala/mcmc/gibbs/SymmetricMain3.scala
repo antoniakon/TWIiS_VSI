@@ -39,15 +39,10 @@ class SymmetricMain3 extends VariableSelection {
   override def nexttaus(oldfullState: FullState, info: InitialInfo):FullState= {
 
     //todo: check if acoef non set values create an issue
-    var sumaj = 0.0
-    oldfullState.acoefs.foreachValue( acoef => {
-      sumaj += pow(acoef - info.alphaPriorMean, 2)
-    })
+    var sumzj = 0.0
 
-    //todo: check if bcoef non set values create an issue
-    var sumbk = 0.0
-    oldfullState.bcoefs.foreachValue( bcoef => {
-      sumbk += pow(bcoef - info.betaPriorMean, 2)
+    oldfullState.zcoefs.foreachValue( zcoef => {
+      sumzj += pow(zcoef - info.alphaPriorMean, 2)
     })
 
     //todo: check if thcoef non set values create an issue
@@ -56,13 +51,11 @@ class SymmetricMain3 extends VariableSelection {
       sumThetajk += pow(thcoef -info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
     })
 
-
     val njk = info.alphaLevelsDist * info.betaLevelsDist // Number of levels of interactions
-    val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
-    val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
+    val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumzj)).draw() //sample the precision of alpha from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
-    oldfullState.copy(tauabth = DenseVector(newtauAlpha, newtauBeta, newtauTheta))
+    oldfullState.copy(tauabth = DenseVector(newtauZeta, newtauTheta))
   }
 
   override def nextCoefs(oldfullState: FullState, info: InitialInfo): FullState = {
