@@ -191,36 +191,12 @@ class SymmetricMain3 extends VariableSelection {
       sumb += item.list.length*zetaEff(item.b)
     })
 
-    // For zeta 1 effects
-    def sumaEff(n: Int): Double = {
-      @annotation.tailrec
-      def go(n:Int, sum: Double): Double={
-        if (n<0) sum
-        else go(n-1, sum + sumAlphaGivenBeta(structure, n, zetaEff))
-      }
-      go(n, 0.0)
-    }
-    val sumAlpha = sumaEff(nz-1)
-
-    // For zeta 2 effects
-    def sumbEff(n: Int): Double = {
-      @annotation.tailrec
-      def go(n:Int, sum: Double): Double={
-        if (n<0) sum
-        else go(n-1, sum + sumBetaEffGivenAlpha(structure, n, zetaEff))
-      }
-      go(n, 0.0)
-    }
-    val sumBeta = sumbEff(nz-1)
-
     // Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
     structure.foreach( item => {
       sumInter += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
     })
 
-    println(sumAlpha + sumBeta + sumInter)
-    println(suma + sumb + sumInter)
-    sumAlpha + sumBeta + sumInter
+    suma + sumb + sumInter
   }
 
   /**
