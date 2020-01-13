@@ -28,9 +28,9 @@ class SymmetricMain3 extends VariableSelection {
     val prevtau = oldfullState.mt(1)
     val prevmu = oldfullState.mt(0)
     val varMu = 1.0 / (info.tau0 + info.N * prevtau) //the variance for mu
-    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, info.alphaLevels, info.betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
+    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.zcoefs, info.zetaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
-    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, prevmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, prevmu, oldfullState.zcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
     oldfullState.copy(mt=DenseVector(newmu,newtau))
   }
 
@@ -174,38 +174,52 @@ class SymmetricMain3 extends VariableSelection {
     sum
   }
   /**
-    * Calculate the sum of all the alpha and all the beta effects for all the observations.
+    * Calculate the sum of all the zeta 1 and all the zeta 2 effects for all the observations.
     */
-  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumAllMainInterEff(structure: DVStructure, zetaEff: DenseVector[Double], nz: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    var suma = 0.0
+    var sumb = 0.0
     var sumInter = 0.0
 
-    // For alpha effects
+    // For zeta effects in first column
+    structure.foreach(item => {
+      suma += item.list.length*zetaEff(item.a)
+    })
+
+    // For zeta effects in second column
+    structure.foreach(item => {
+      sumb += item.list.length*zetaEff(item.b)
+    })
+
+    // For zeta 1 effects
     def sumaEff(n: Int): Double = {
       @annotation.tailrec
       def go(n:Int, sum: Double): Double={
         if (n<0) sum
-        else go(n-1, sum + sumAlphaGivenBeta(structure, n, alphaEff))
+        else go(n-1, sum + sumAlphaGivenBeta(structure, n, zetaEff))
       }
       go(n, 0.0)
     }
-    val sumAlpha = sumaEff(nk-1)
+    val sumAlpha = sumaEff(nz-1)
 
-    // For beta effects
+    // For zeta 2 effects
     def sumbEff(n: Int): Double = {
       @annotation.tailrec
       def go(n:Int, sum: Double): Double={
         if (n<0) sum
-        else go(n-1, sum + sumBetaEffGivenAlpha(structure, n, betaEff))
+        else go(n-1, sum + sumBetaEffGivenAlpha(structure, n, zetaEff))
       }
       go(n, 0.0)
     }
-    val sumBeta = sumbEff(nj-1)
+    val sumBeta = sumbEff(nz-1)
 
     // Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
     structure.foreach( item => {
       sumInter += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
     })
 
+    println(sumAlpha + sumBeta + sumInter)
+    println(suma + sumb + sumInter)
     sumAlpha + sumBeta + sumInter
   }
 
@@ -236,13 +250,13 @@ class SymmetricMain3 extends VariableSelection {
   /**
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
-  def YminusMuAndEffects(structure:DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def YminusMuAndEffects(structure:DVStructure, mu: Double, zetaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var sum = 0.0
 
     structure.foreach( item => {
       val a = item.a
       val b = item.b
-      sum += item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) * indics(a, b), 2)).sum
+      sum += item.list.map(x => scala.math.pow(x - mu - zetaEff(a) - zetaEff(b) - interEff(a, b) * indics(a, b), 2)).sum
     })
     sum
   }
