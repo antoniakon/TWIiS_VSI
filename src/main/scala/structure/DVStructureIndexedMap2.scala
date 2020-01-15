@@ -181,7 +181,7 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second without being in both
     */
-  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = zetaIndices(z).map(tuple => (tuple, myStructure(tuple))).toMap
+  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = zetaIndicesWithoutDoubles(z).map(tuple => (tuple, myStructure(tuple))).toMap
 
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second (both sides included)
