@@ -41,6 +41,12 @@ trait DVStructure {
     */
   def calcBetaLength(k: Int): Double
 
+  def calcDoubleZetaSum(zj: Int): Double
+
+  def calcDoubleZetaLength(zj: Int): Double
+
+  def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]
+
   /**
     * Returns the DVList for (alpha,beta)
     */
@@ -51,6 +57,8 @@ trait DVStructure {
   def getAllItemsForGivenA(a : Int): List[DVItem]
 
   def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]
+
+  def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]
 
   def getAllItemsForGivenB(b : Int): List[DVItem]
 

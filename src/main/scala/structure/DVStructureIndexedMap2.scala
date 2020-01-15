@@ -17,6 +17,7 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
   private var betaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndicesWithoutDoubles = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
+  private var zetaIndicesDoubles = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
 
   //private val myStructure: TreeMap[(Int, Int), DVList] = initMap()
   init()
@@ -55,6 +56,7 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
       betaIndices = betaIndices.map{case (k,v) => (k, v.distinct)}
       zetaIndices = zetaIndices.map{case (k,v) => (k, v.distinct)}
       zetaIndicesWithoutDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1!=a._2))}
+      zetaIndicesDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1==a._2))}.filter(v1 => v1._2.nonEmpty) //Includes only the double z without the zs that do not have doubles
       myStructure((curAlpha, curBeta)).addItem(y(i))
     }
   }
@@ -166,7 +168,7 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     * Calculates the sum of the response y for a given zeta
     */
   override def calcZetaSum(zj: Int): Double = {
-    val sum = zetaIndices(zj).map(tuple => myStructure(tuple).sum).sum
+    val sum = zetaIndicesWithoutDoubles(zj).map(tuple => myStructure(tuple).sum).sum
     sum
   }
 
@@ -174,14 +176,63 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     * Calculates the number of the responses y for a given zeta
     */
   override def calcZetaLength(zj: Int): Double = {
-    val length = zetaIndices(zj).map(tuple => myStructure(tuple).length).sum
+    val length = zetaIndicesWithoutDoubles(zj).map(tuple => myStructure(tuple).length).sum
     length
   }
+
+  /**
+    * Calculates the sum of the response y for a given zeta
+    */
+  override def calcDoubleZetaSum(zj: Int): Double = {
+   // val sum = zetaIndicesDoubles(zj).map(tuple => myStructure(tuple).sum).sum
+   val lengthMaybe = zetaIndicesDoubles.get(zj)
+    val sum = lengthMaybe match {
+      case Some(listbuf) =>
+        listbuf.map(tuple => myStructure(tuple).sum).sum
+      case None =>
+        0
+    }
+    sum
+  }
+
+  /**
+    * Calculates the number of the responses y for a given zeta
+    */
+  override def calcDoubleZetaLength(zj: Int): Double = {
+    //val length = zetaIndicesDoubles(zj).map(tuple => myStructure(tuple).length).sum
+    val lengthMaybe = zetaIndicesDoubles.get(zj)
+    val length = lengthMaybe match {
+      case Some(listbuf) =>
+        listbuf.map(tuple => myStructure(tuple).length).sum
+      case None =>
+        0
+    }
+    length
+  }
+
 
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second without being in both
     */
   override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = zetaIndicesWithoutDoubles(z).map(tuple => (tuple, myStructure(tuple))).toMap
+
+  override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
+    //  zetaIndicesDoubles(z).map(tuple => (tuple, checkIfExists(myStructure.get(tuple)))).toMap
+    //zetaIndicesDoubles(z).map(tuple => (tuple, myStructure(tuple))).toMap
+
+    val maybeList = zetaIndicesDoubles.get(z)
+
+      val returnedMap = maybeList match {
+        case Some(listbuf) =>
+          listbuf.map(tuple => (tuple, myStructure(tuple))).toMap
+        case None =>
+          Map[(Int,Int),DVList]()
+      }
+      returnedMap
+    }
+
+
+
 
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second (both sides included)

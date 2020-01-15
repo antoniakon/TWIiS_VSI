@@ -4,6 +4,7 @@ import breeze.linalg.{*, DenseMatrix, DenseVector, max}
 import breeze.numerics.{exp, log, pow, sqrt}
 import breeze.stats.mean
 import structure.DVStructure
+import structure.DVList
 
 class SymmetricMain3 extends VariableSelection {
   val dv = Array(2.6017059164528966, -0.009771336315506675, 0.007912232574264861, 0.04007021825945167, 2.7441230878433105, 0.027389556986746822, -0.06697554337599647, -8.007114122174142E-4, 0.0, 0.026900437913421865, 3.6658784094663885, 2.49522684662327, -0.018418121343520145, 0.0, 0.02518103384371097, 2.23961135155839, -1.3927526377103536, 0.013779417856511118, 0.03744812080378675, 0.008686020641730074, -0.006342141327408062, 1.783061952079203, -0.015875738391452312, -0.011220586349821161, 0.016730791239580316, 0.0031714521057734893, 0.023208982199357388, 5.578001433242671E-4, 0.0, 3.5629007719930456E-4, 0.8478035636804637, 0.0035385835872639004, 0.03448048158635235, 0.0, 0.016910648617650063, -0.009368709234820406, 0.0030404012698019172, 0.03203897638678914, 0.02562109914990373, 0.006085918534248676, -0.6127898353284323, 0.012286933096967727, -0.07782555618127059, 0.05249466874041374, -0.010116152438496472, -0.014339608855101707, -0.12918199343877793, 0.011483879096421803, 0.0, 0.01288027780692553, 0.0038239283559973352, 0.8405081720024301, -0.028329312840997076, 0.0, -0.01657004966660067, 0.5271052866505676, -0.02400369455385493, -1.5414120944729437, 0.22434385344355495, -0.048651255365600846, 0.03510137768962216, 1.3956769394733277, -0.006208417984605372, 0.004571603754511012, 0.01920259618589719, -0.19731872423386332, 3.0951031257523773, 1.6911727990400254, 0.0, 1.9134228442030587, 0.013617223631881427, -0.005550190903711253, 0.9385665761220506, 0.0, 1.222982841811133, 0.014999044811879131, -0.009671830288291224, -0.021029616651297656, 0.007433814039348221, 0.0022368292335184013, -0.013136232312181284, 0.017199121035394296, -0.01740071491815674, 0.12037636268847685, 0.026776989952518104, 0.011875981660290195, 0.05464804932128788, 0.015713945271984244, 0.0, 0.003320441421002656, 0.021911422466208946, 0.03214958980778366, 0.019004472114151256, 0.0, -0.010538127567225223, -0.01695009252238207, -0.023956683183894063, -0.04021795491570351, 4.117778235193302, 6.638783033116403E-4, 1.6955349206383794, -0.004071167833090188, 0.0013643548981905154, 0.006951240711676783, 0.013893302554700424, 0.002864385926936876, 0.0047829099571852175, 0.020544066082143313, 0.0, 1.2633265516121868, -0.029402884878882516, 0.017648366212642333, -0.015391970610614968, 0.0, 1.3488416793342801, 0.050658742453676166, -0.016220645016616363, 1.3391089108306689, -0.007742778445585529, -0.6136648496914848, 0.0056994343438359595, 0.029390371361697067, -0.10059827247469787, 0.08447235068592644, 8.495069933195136E-4, -0.01933678877529636, 0.03507937954581327, -0.0034912196549974506, 0.0, 0.007013368310608085, 0.08774515792232494, -0.03675755669828546, 0.8197278883875869, 0.0, -0.006347559265661571, 0.0024170448104629885, 0.004621910593119889, 0.004212811224493226, 0.03299560368660157, -0.02051391035057748, -2.1935780084758583, -0.04535858073656455, -0.006759353253553382, -2.69981923138738, -0.01081541402145468, 0.021084648461874776, 1.563805470155378, 3.82602974254243, 0.0, -0.009409404225677142, 0.005196988178242716, 1.568745530604427, 0.01696555599522003, 0.0, -0.01685537612434539, 0.005766787845331351, 1.7747857586180344, -0.03416732272136113, -0.003704758060042889, 0.012454476706899842, -0.028265555962092483, 0.6034788005595431, 0.008340428642646398, -0.039393489793803756, 0.032953553906615835, 0.0138137701765469, -0.010068371380224551, 3.1628248096308025, 0.0, 0.010593599464334882, 0.09156384064108444, -0.041834120824594714, -0.019919418633226764, 0.0, 0.007454394397134417, -0.02778478917093173, -1.4028707000422551, -0.0021023720668093414, -0.01883884516040393, 0.011143166051209684, 0.06675041553683976, 0.04183130383762347, 3.367854295207169E-5, -0.006206358257623055, -0.0023250894466018864, 4.296511236637127, 3.901439261002965, 1.850037666924977, 0.0, -5.114498313832163E-4, 1.070802633175997, -0.053443193597903046, 0.011830425256937291, 0.0, 0.033005551868997715, -0.02714971195045028, -0.021166810819407522, -0.033705053568302536, 5.267473237559164, 1.8518981921016444, 2.5724162689874754, 0.0077822099332529185, -0.9530861427055595, 1.6873965052815756, -0.03926149566915929, 0.007772020547010697, -0.12430173131115425, 7.084771275308971E-4, 0.0, 0.003925500419002989, -0.011227184979535794, -0.05167512036554012, -0.026674460286618445, 0.0, 0.019475567060499282, -0.7179743021041293, -0.004344596906649192, 0.007249345579431036, 0.02133883570545327, -0.0045051312354994575, 0.0031850346480215394, -0.016008757447594613, 0.00659878165759745, -0.01786215656375753, -0.025601715868604387, -0.025482591750035144, 0.01660406697533271, 2.7534886555703064, 0.0, -0.010400119057408695, 9.973076548113538E-4, -0.011153367910363806, -0.039370026798710565, 0.0, -0.008060907741521359, 0.027515018504937698, -0.029355038784475165, 0.030778345612772474, -0.008952523183035173, 0.005633259474114694, 0.011210897476641387, -0.016973193828707055, 2.430669517708118, 0.08191611268617145, 3.0374209166848276, 0.0421678517663094, -0.009039518606554359, 2.4954346434120573, 0.0, 0.018230749251786707, -0.005889079856932727, -0.014872292222471458, 0.17006026830098006, 0.0, 0.009841531368490268, -0.029893817460370148, 0.01355068391733152, 0.017449719203466524, -1.003980247598381, -0.24803454731726943, -0.02840920972623035, 1.2757721588734565, 0.0423466833480538, -0.017744672059155885, 0.024415063181221663, 0.1549691601501992, 0.3937792775610309, 0.006337340324436993, 0.0, -0.07527158715313358, -0.00817329287120582, -0.012788790025210224, 0.003921589933257613, 0.0, -0.03962543698819885, 0.08460029491203659, -0.033204319757496596, 0.027051195646422152, 0.0024014977190241547, 0.07384643276185794, -0.012293786729088539, 0.10703591747743424, 1.9086761465634858, 5.448874234780498, 1.0027838965759301, -0.02158536583495425, -0.017528397924997767, -0.009182908948964041, 0.0, 2.230572420345381, -0.0013334511999952994, 0.03544239860477619, 3.726115133285349, 0.0, 0.023608054013079114, -0.007140256725257687, 2.3146189561417323, -0.6726027254442168, 3.769250237928747, -0.03956786646998975, 2.7187635902268363, 0.800566755732455, 0.019341082575404404, -0.11967774356450467, 0.009787691930742031, -0.004268467741600024, 0.06121970156937635, -0.0020537136987004213, 0.0, -0.006819586103552202, 0.010302669340880997, 0.055360405426384665, -0.054956037788458104, 0.0, 0.0021467449388198724, -0.013874707347192636, 0.021860488383471613, 0.00899292972194786, 0.025003861478492217, 0.023789621029437276, -0.025169323262606378, -0.002598168816693438, -0.01076183623897745, -0.006279324726378747, -0.033855531998819806, 0.010343179590247865, -0.02860605920974769, -0.1780880719722548, 0.0, 0.1255623210685703, -0.024419660658919443, -8.506460577821602E-4, 0.045249311905379876, 0.0, 0.03148124589267364, -0.01800091710266011, 0.057256595358706724, -0.038618132337551646, 0.0202446150655338, 0.03453189965027892, -0.025123214990926433, -0.013609797777575088, -0.016951558099182914, 1.1285450718947145, -0.010310793550872352, 1.476054308391575, 0.660087084973631, -0.030727376136287114, 0.0, -0.018029026140666753, -0.013140143732990455, -0.018853259025706243, -0.01494750360911966, 0.0, 0.6377027312919384, -0.02825611622857848, 0.007640191579344218, 0.03048020620412202, -0.03884596771176862, 0.011821571544450835, 0.013744397445671993, 0.04269355903476545, -0.14765063133071757, -0.019796381142077452, 0.02103176508153761, -0.02168481380165882, -0.0013885111718701481, 0.03944751359931696, 0.0, 0.021131136367325956, 1.139627079186505, -0.013120667737221934, -0.019206570561545143, 0.0, 0.0021449168340867647, 0.012961133070772214, 0.0018698963250457924, 0.008072007383928671, 0.017198628299538474, 0.02901690441255028, 1.2844650324816175E-4, -0.015748168609363053, 0.03285079421632444, 0.008392400614867538, -1.9861004663646382, 1.8149364603160316, -0.012694529266456409, -0.010822860402497858, 0.0, 0.03825187725079332, 2.243292548429352, -0.01851044828307917, 0.050796718498430864, 0.0, 4.337090054433234, -0.0691467126137145, 0.02369826743589345, -1.6747681193944786, 0.09328315951341572, 0.0088103895589982)
@@ -36,8 +37,8 @@ class SymmetricMain3 extends VariableSelection {
     val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.zcoefs, info.zetaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
     val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, prevmu, oldfullState.zcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
-    //oldfullState.copy(mt=DenseVector(newmu,newtau))
-    oldfullState.copy(mt=DenseVector(5.3,1.0))
+    oldfullState.copy(mt=DenseVector(newmu,newtau))
+    //oldfullState.copy(mt=DenseVector(5.3,1.0))
   }
 
   // Update taus (taua, taub, tauInt)
@@ -58,11 +59,12 @@ class SymmetricMain3 extends VariableSelection {
     })
 
     val njk = info.structure.sizeOfStructure() // Number of levels of interactions
-    val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumzj)).draw() //sample the precision of alpha from gamma
+    //val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumzj)).draw() //sample the precision of alpha from gamma
+    val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels , 1.0 / (info.bPrior + sumzj)).draw() //sample the precision of alpha from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
-    //oldfullState.copy(tauabth = DenseVector(newtauZeta, newtauTheta))
-    oldfullState.copy(tauabth = DenseVector(0.39, 0.22))
+    oldfullState.copy(tauabth = DenseVector(newtauZeta, newtauTheta))
+    //oldfullState.copy(tauabth = DenseVector(0.39, 0.22))
   }
 
   override def nextCoefs(oldfullState: FullState, info: InitialInfo): FullState = {
@@ -76,12 +78,15 @@ class SymmetricMain3 extends VariableSelection {
     val curZetaEstim = DenseVector.zeros[Double](info.zetaLevels)
     (0 until info.zetaLevels).foreach( item => { //For each existing? zeta
       val j = item
-      val SXZetaj = info.structure.calcZetaSum(j) // the sum of the observations that have zeta == j on either or both sides
-      val Nj = info.structure.calcZetaLength(j) // the number of the observations that have zeta == j on either or both sides
+      val SXZetaj = info.structure.calcZetaSum(j) // the sum of the observations that have zeta == j on either side, not both
+      val Nj = info.structure.calcZetaLength(j) // the number of the observations that have zeta == j on either side, not both
+      val Njj = info.structure.calcDoubleZetaLength(j) // the number of the observations that have zeta == j on both sides
+      val SXZetajDouble = info.structure.calcDoubleZetaSum(j) // the sum of the observations that have zeta == j on both sides
       val SumZeta = sumEffectsOfOtherZetas(info.structure, j, oldfullState.zcoefs) //the sum of the other zeta effects given zeta, for which the given z is on either side (but not on both sides)
-      val SinterZeta = sumInterEffGivenZeta(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given zeta, for which the given z is on either side, both sides included
-      val varPzeta = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
-      val meanPzeta = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXZetaj - Nj * oldfullState.mt(0) - SumZeta - SinterZeta)) * varPzeta //the mean for alphaj
+      val SinterZeta = sumInterEffGivenZeta(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given zeta, for which the given z is on either side (but not on both sides)
+      val SinterZetaDoubles = sumInterEffDoublesGivenZeta(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given zeta, for which the given z is on both sides
+      val varPzeta = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj + 4 * oldfullState.mt(1) * Njj) //the variance for zetaj
+      val meanPzeta = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXZetaj - Nj * oldfullState.mt(0) - SumZeta - SinterZeta + 2 * SXZetajDouble - 2 * Njj * oldfullState.mt(0) - 2 * SinterZetaDoubles )) * varPzeta //the mean for alphaj
       curZetaEstim(j) = breeze.stats.distributions.Gaussian(meanPzeta, sqrt(varPzeta)).draw()
     })
 
@@ -130,9 +135,9 @@ class SymmetricMain3 extends VariableSelection {
       }
     })
 
-    //oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
+    oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
 
-    oldfullState.copy(thcoefs = dm, indics = dmind, finalCoefs = curThetaEstim*:*curIndicsEstim )
+    //oldfullState.copy(thcoefs = dm, indics = dmind, finalCoefs = curThetaEstim*:*curIndicsEstim )
   }
 
   /**
@@ -178,7 +183,17 @@ class SymmetricMain3 extends VariableSelection {
     * Add all the interaction effects for a given zeta. Adds all the interactions for which zeta is on either side. Includes the doubles bcs getZetasItemsForGivenZ uses a structure that includes everything
     */
   def sumInterEffGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    structure.getZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
+    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
+  }
+
+  def sumInterEffDoublesGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+    //structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
+    val ifMapNonEmpty = structure.getAllDoubleZetasItemsForGivenZ(zetaIndex)
+    val sum = ifMapNonEmpty match {
+      case m: Map[(Int, Int), DVList] if m.isEmpty =>  0
+      case _ => ifMapNonEmpty.map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
+    }
+    sum
   }
 
   /**
@@ -221,7 +236,7 @@ class SymmetricMain3 extends VariableSelection {
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/symmetricMain3-10mScalaRestryAllConstFindZ-")
+    val filePath = getMainFilePath.concat("/symmetricMain3-100KScalaRestryAllConstFindZWed-")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
       "taus" -> filePath.concat("taus.csv"),
       "zetas" -> filePath.concat("zetas.csv"),
