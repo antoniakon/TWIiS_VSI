@@ -33,7 +33,7 @@ class AsymmetricBoth extends VariableSelection {
     val varMu = 1.0 / (info.tau0 + info.N * prevtau) //the variance for mu
     val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, info.alphaLevels, info.betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
-    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, prevmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, newmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
     oldfullState.copy(mt=DenseVector(newmu,newtau))
   }
 
@@ -267,24 +267,25 @@ class AsymmetricBoth extends VariableSelection {
     val matrices = calculateAndPrintCommons(statesResults)
 
     // Save the results to a csv file
-//    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
-//    saveToCSV(mergedMatrix, getFileNameToSaveResults)
-    saveToCSV(matrices(0), getFileNameToSaveResults("mutau"))
-    saveToCSV(matrices(1), getFileNameToSaveResults("taus"))
-    saveToCSV(acoefMat, getFileNameToSaveResults("alphas"))
-    saveToCSV(bcoefMat, getFileNameToSaveResults("betas"))
-    saveToCSV(matrices(2), getFileNameToSaveResults("thetas"))
-    saveToCSV(matrices(3), getFileNameToSaveResults("indics"))
+    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
+    saveToCSV(mergedMatrix, getFileNameToSaveResults("allCoefs"))
+//    saveToCSV(matrices(0), getFileNameToSaveResults("mutau"))
+//    saveToCSV(matrices(1), getFileNameToSaveResults("taus"))
+//    saveToCSV(acoefMat, getFileNameToSaveResults("alphas"))
+//    saveToCSV(bcoefMat, getFileNameToSaveResults("betas"))
+//    saveToCSV(matrices(2), getFileNameToSaveResults("thetas"))
+//    saveToCSV(matrices(3), getFileNameToSaveResults("indics"))
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/asymmetricBoth1mScalaRes-")
+    val filePath = getMainFilePath.concat("/asymmetricBothCode10mScalaResNEW-")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
       "taus" -> filePath.concat("taus.csv"),
       "alphas" -> filePath.concat("alphas.csv"),
       "betas" -> filePath.concat("betas.csv"),
       "thetas" -> filePath.concat("thetas.csv"),
-      "indics" -> filePath.concat("indics.csv")
+      "indics" -> filePath.concat("indics.csv"),
+      "allCoefs" -> filePath.concat("allcoefs.csv")
     )
     pathToFiles(param)
   }
