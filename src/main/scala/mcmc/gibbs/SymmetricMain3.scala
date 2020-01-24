@@ -31,12 +31,10 @@ class SymmetricMain3 extends VariableSelection {
   // Update mu and tau
   // helper function for mu tau
   override def nextmutau(oldfullState: FullState, info: InitialInfo): FullState= {
-    val prevtau = oldfullState.mt(1)
-    val prevmu = oldfullState.mt(0)
-    val varMu = 1.0 / (info.tau0 + info.N * prevtau) //the variance for mu
-    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.zcoefs, info.zetaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
+    val varMu = 1.0 / (info.tau0 + info.N * oldfullState.mt(1)) //the variance for mu
+    val meanMu = (info.mu0 * info.tau0 + oldfullState.mt(1) * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.zcoefs, info.zetaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
-    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, prevmu, oldfullState.zcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, newmu, oldfullState.zcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
     oldfullState.copy(mt=DenseVector(newmu,newtau))
     //oldfullState.copy(mt=DenseVector(5.3,1.0))
   }
@@ -59,8 +57,8 @@ class SymmetricMain3 extends VariableSelection {
     })
 
     val njk = info.structure.sizeOfStructure() // Number of levels of interactions
-    //val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumzj)).draw() //sample the precision of alpha from gamma
-    val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels , 1.0 / (info.bPrior + sumzj)).draw() //sample the precision of alpha from gamma
+    val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumzj)).draw() //sample the precision of alpha from gamma
+    //val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels , 1.0 / (info.bPrior + sumzj)).draw() //sample the precision of alpha from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
     oldfullState.copy(tauabth = DenseVector(newtauZeta, newtauTheta))
@@ -75,19 +73,28 @@ class SymmetricMain3 extends VariableSelection {
   // helper function for alpha coeffs
   def nextZetaCoefs(oldfullState: FullState, info: InitialInfo):FullState={
 
+
     val curZetaEstim = DenseVector.zeros[Double](info.zetaLevels)
+    curZetaEstim:= oldfullState.zcoefs
+
+   // println("curZetaEstim Init")
+    //println(curZetaEstim)
     (0 until info.zetaLevels).foreach( item => { //For each existing? zeta
       val j = item
+      //println(println(s"j, $j"))
+
       val SXZetaj = info.structure.calcZetaSum(j) // the sum of the observations that have zeta == j on either side, not both
       val Nj = info.structure.calcZetaLength(j) // the number of the observations that have zeta == j on either side, not both
       val Njj = info.structure.calcDoubleZetaLength(j) // the number of the observations that have zeta == j on both sides
       val SXZetajDouble = info.structure.calcDoubleZetaSum(j) // the sum of the observations that have zeta == j on both sides
-      val SumZeta = sumEffectsOfOtherZetas(info.structure, j, oldfullState.zcoefs) //the sum of the other zeta effects given zeta, for which the given z is on either side (but not on both sides)
+      val SumZeta = sumEffectsOfOtherZetas(info.structure, j, curZetaEstim) //the sum of the other zeta effects given zeta, for which the given z is on either side (but not on both sides)
       val SinterZeta = sumInterEffGivenZeta(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given zeta, for which the given z is on either side (but not on both sides)
       val SinterZetaDoubles = sumInterEffDoublesGivenZeta(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given zeta, for which the given z is on both sides
       val varPzeta = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj + 4 * oldfullState.mt(1) * Njj) //the variance for zetaj
       val meanPzeta = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXZetaj - Nj * oldfullState.mt(0) - SumZeta - SinterZeta + 2 * SXZetajDouble - 2 * Njj * oldfullState.mt(0) - 2 * SinterZetaDoubles )) * varPzeta //the mean for alphaj
-      curZetaEstim(j) = breeze.stats.distributions.Gaussian(meanPzeta, sqrt(varPzeta)).draw()
+      curZetaEstim.update(j, breeze.stats.distributions.Gaussian(meanPzeta, sqrt(varPzeta)).draw())
+      //println("curZetaEstim updated")
+      //println(curZetaEstim)
     })
 
     oldfullState.copy(zcoefs = curZetaEstim)
@@ -157,26 +164,11 @@ class SymmetricMain3 extends VariableSelection {
     * Calculate the sum of all the zeta 1 and all the zeta 2 effects for all the observations.
     */
   def sumAllMainInterEff(structure: DVStructure, zetaEff: DenseVector[Double], nz: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    var suma = 0.0
-    var sumb = 0.0
-    var sumInter = 0.0
-
-    // For zeta effects in first column
+    var totalsum = 0.0
     structure.foreach(item => {
-      suma += item.list.length * zetaEff(item.a)
+      totalsum += item.list.length * (zetaEff(item.a) + zetaEff(item.b) + indics(item.a, item.b) * interEff(item.a, item.b))
     })
-
-    // For zeta effects in second column
-    structure.foreach(item => {
-      sumb += item.list.length * zetaEff(item.b)
-    })
-
-    // Add all the interaction effects for a given alpha and a given beta taking advantage of the DVStructure
-    structure.foreach( item => {
-      sumInter += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
-    })
-
-    suma + sumb + sumInter
+    totalsum
   }
 
   /**
@@ -236,7 +228,7 @@ class SymmetricMain3 extends VariableSelection {
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/symmetricMain3-100KScalaRestryAllConstFindZWed-")
+    val filePath = getMainFilePath.concat("/try10m")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
       "taus" -> filePath.concat("taus.csv"),
       "zetas" -> filePath.concat("zetas.csv"),
