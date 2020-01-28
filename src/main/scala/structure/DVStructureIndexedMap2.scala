@@ -6,8 +6,6 @@ import scala.collection.mutable.ListBuffer
 
 class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
-
-
   val alphaLevels = alpha.toArray.distinct.length
   val betaLevels = beta.toArray.distinct.length
   val zetaLevels = max(alphaLevels, betaLevels)
@@ -134,6 +132,9 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     myStructure.foreach( item => f(new DVItem(item._1._1, item._1._2, item._2)) )
   }
 
+  /**
+    * For a given a it returns a list of items  DVItem(a: Int,b: Int,list: DVList)
+    */
   override def getAllItemsForGivenA(a: Int): List[DVItem] = {
     val ifaexists = alphaIndices.get(a)
     val res = ifaexists match {
@@ -145,6 +146,9 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     res
   }
 
+  /**
+    * For a given b it returns a list of items  DVItem(a: Int,b: Int,list: DVList)
+    */
   override def getAllItemsForGivenB(b: Int): List[DVItem] = {
     val ifbexists = betaIndices.get(b)
     val res = ifbexists match {
@@ -156,10 +160,16 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     res
   }
 
+  /**
+    * It returns a Map[Int, List[DVItem]], where the keys are the a's
+    */
   override def getAllItemsMappedByA(): Map[Int, List[DVItem]] = {
     alphaIndices.map(x => (x._1, getAllItemsForGivenA(x._1))).toMap
   }
 
+  /**
+    * It returns a Map[Int, List[DVItem]], where the keys are the b's
+    */
   override def getAllItemsMappedByB(): Map[Int, List[DVItem]] = {
     betaIndices.map(x => (x._1, getAllItemsForGivenB(x._1))).toMap
   }
@@ -210,7 +220,6 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     length
   }
 
-
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second without being in both
     */
@@ -221,7 +230,6 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     //zetaIndicesDoubles(z).map(tuple => (tuple, myStructure(tuple))).toMap
 
     val maybeList = zetaIndicesDoubles.get(z)
-
       val returnedMap = maybeList match {
         case Some(listbuf) =>
           listbuf.map(tuple => (tuple, myStructure(tuple))).toMap
@@ -232,14 +240,10 @@ class DVStructureIndexedMap2(y: DenseVector[Double], alpha: DenseVector[Int], be
     }
 
 
-
-
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second (both sides included)
     */
   override def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = zetaIndices(z).map(tuple => (tuple, myStructure(tuple))).toMap
-
-  private def getAllItemsMappedByZ(): Unit = ???
 
   override def sizeOfStructure():Int = myStructure.keys.size
 

@@ -138,7 +138,6 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
 
   override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList]= ???
 
-
   override def calcAlphaBetaLength(j: Int, k: Int): Double = ???
 
   override def calcAlphaBetaSum(j: Int, k: Int): Double = ???
@@ -146,6 +145,14 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
   override def sizeOfStructure():Int = ???
 
   override def sizeOfDouble():Int = ???
+
+  override def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
+
+  override def calcDoubleZetaSum(zj: Int): Double = ???
+
+  override def calcDoubleZetaLength(zj: Int): Double = ???
+
+  override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
 
   override def getAllItemsMappedByB() : Map[Int, List[DVItem]] = (0 until nk).map(x => (x, getAllItemsForGivenB(x))).toMap
 

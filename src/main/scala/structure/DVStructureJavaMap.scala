@@ -225,5 +225,12 @@ class DVStructureJavaMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: 
 
   override def sizeOfStructure():Int = ??? //myStructure.keys.size
 
+  override def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
+
   override def sizeOfDouble():Int = ??? //myStructure.keys.filter(k => (k._1==k._2)).size
+  override def calcDoubleZetaSum(zj: Int): Double = ???
+
+  override def calcDoubleZetaLength(zj: Int): Double = ???
+
+  override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
 }

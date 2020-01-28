@@ -174,13 +174,19 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
 
   private def getAllItemsMappedByZ(): Unit = {
     for (i <- 0 until zetaLevels) {
-      val selectedItems = myStructure.filterKeys(key => (key._1 == i || key._2 == i) && !(key._1 == i && key._2 == i)).toMap
+      //val selectedItems = myStructure.filterKeys(key => (key._1 == i || key._2 == i) && !(key._1 == i && key._2 == i)).toMap
+      val selectedItems = myStructure.filterKeys(key => (key._1 == i || key._2 == i)).toMap
       newStructure.get(i) match {
         case None => newStructure += (i -> selectedItems)
         case Some(value) => newStructure += (i -> selectedItems)
       }
     }
   }
+
+  override def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
+  override def calcDoubleZetaSum(zj: Int): Double = ???
+  override def calcDoubleZetaLength(zj: Int): Double = ???
+  override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
 
   override def sizeOfStructure():Int = myStructure.keys.size
 

@@ -38,14 +38,6 @@ abstract class VariableSelection {
     val meanValsmtcoef = mean(mtcoefMat(::, *))
     println(meanValsmtcoef)
 
-    println("taus")
-    val tauscoefficients = statesResults.fstateL.map(f => f.tauabth)
-    val tauscoefMat = DenseMatrix(tauscoefficients.map(_.toArray): _*)
-    //val outputFile = new File("/home/antonia/Desktop/tausTry.csv")
-    //breeze.linalg.csvwrite(outputFile, tauscoefMat, separator = ',')
-    val meanValstauscoef = mean(tauscoefMat(::, *))
-    println(meanValstauscoef)
-
     println("thetas")
     val thetascoefficients = statesResults.fstateL.map(f => f.thcoefs.toDenseVector)
     val thetascoefMat = DenseMatrix(thetascoefficients.map(_.toArray): _*)
@@ -64,6 +56,12 @@ abstract class VariableSelection {
     val meanValsfinalcoef = mean(finalcoefMat(::, *))
     println(meanValsfinalcoef)
 
+    println("taus")
+    val tauscoefficients = statesResults.fstateL.map(f => f.tauabth)
+    val tauscoefMat = DenseMatrix(tauscoefficients.map(_.toArray): _*)
+    val meanValstauscoef = mean(tauscoefMat(::, *))
+    println(meanValstauscoef)
+
     List(mtcoefMat, tauscoefMat, finalcoefMat, indicscoefMat)
   }
 
@@ -73,7 +71,7 @@ abstract class VariableSelection {
   }
 
   protected def getMainFilePath() : String ={
-    "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
+    "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
   }
 
   // Calculation of the execution time
@@ -82,7 +80,7 @@ abstract class VariableSelection {
     val ret = f
     val execTime = (System.nanoTime - s) / 1e6
     println("time: " + execTime + "ms")
-    val file = new File(getMainFilePath.concat("/ScalaRuntime.txt"))
+    val file = new File(getMainFilePath.concat("/ScalaRuntime10mAsymmetricBoth.txt"))
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(execTime.toString)
     bw.close()

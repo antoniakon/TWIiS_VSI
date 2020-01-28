@@ -3,7 +3,7 @@ package mcmc.gibbs
 import java.io.File
 
 import breeze.linalg.{DenseVector, csvread, max}
-import structure.{DVStructure, DVStructureIndexedMap, DVStructureMap}
+import structure.{DVStructure, DVStructureIndexedMap, DVStructureIndexedMap2, DVStructureMap}
 
 import scala.io.StdIn.readLine
 
@@ -22,7 +22,7 @@ object MainRunner {
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
     //    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
-    val structure : DVStructure = new DVStructureIndexedMap(y, alpha, beta)
+    val structure : DVStructure = new DVStructureIndexedMap2(y, alpha, beta)
     val alphaLevels = alpha.toArray.distinct.max+1
     val betaLevels = beta.toArray.distinct.max+1
 
@@ -39,7 +39,7 @@ object MainRunner {
       }
     }
 
-    val structureSorted : DVStructure = new DVStructureMap(y, alphaSorted, betaSorted) // Sorted structure to be used for the indices to run through the data but not repeat e.g. only (1,3) and not (3,1)
+    val structureSorted : DVStructure = new DVStructureIndexedMap2(y, alphaSorted, betaSorted) // Sorted structure to be used for the indices to run through the data but not repeat e.g. only (1,3) and not (3,1)
     val noOfInters = structureSorted.sizeOfStructure()
     val zetaLevels = max(alphaLevels, betaLevels)
     println(zetaLevels)
@@ -49,8 +49,8 @@ object MainRunner {
     val betaLevelsDist = beta.toArray.distinct.length
 
     // Parameters
-    val noOfIters = 1000000
-    val thin = 100
+    val noOfIters = 10000000
+    val thin = 1000
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -77,8 +77,10 @@ object MainRunner {
     object myAsymmetricBoth extends AsymmetricBoth
     object mySymmetricInters extends SymmetricInters
     object mySymmetricMain extends SymmetricMain
+    object mySymmetricMain3 extends SymmetricMain3
     object mySymmetricBoth extends SymmetricBoth
-    mySymmetricMain
+    myAsymmetricBoth
+
 
   }
 
