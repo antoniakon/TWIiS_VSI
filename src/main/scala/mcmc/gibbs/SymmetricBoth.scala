@@ -3,12 +3,20 @@ package mcmc.gibbs
 import breeze.linalg.{DenseMatrix, DenseVector, max, upperTriangular}
 import breeze.numerics.{exp, log, pow, sqrt}
 
+/**
+  * Variable selection with Gibbs sampler. Implementation for symmetric main effects and symmetric interactions.
+  * Extends SymmetricMain for updating z coefficients, mu and tau. Implements update for taus and interactions based on SymmetricInteractions class.
+  * Model: X_ijk | mu,a_j,b_k ,I_jk,theta_jk,tau  ~ N(mu + z_j + z_k + I_jk * theta_jk , τ^−1 )
+  * Using gamma priors for taua, taub, tauTheta, Bermouli for the variable selection indicator I_jk and Normal for the main effects z and the effect size theta_jk
+  * Symmetric main effects: zs come from the same distribution
+  * Symmetric Interactions: I_jk * theta_jk = I_kj * theta_kj
+  **/
 class SymmetricBoth extends SymmetricMain3 {
 
   override def variableSelection(info: InitialInfo): FullStateList = {
     // Initialise case class objects
-    val initmt = DenseVector[Double](0.0,1.0)
-    val inittaus = DenseVector[Double](1.0,1.0)
+    val initmt = DenseVector[Double](0.0, 1.0)
+    val inittaus = DenseVector[Double](1.0, 1.0)
     val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels)
     val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels)
     val initZetaCoefs = DenseVector.zeros[Double](info.zetaLevels)
@@ -19,13 +27,14 @@ class SymmetricBoth extends SymmetricMain3 {
     calculateNewState(info.noOfIter, info, FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
   }
 
-  // Update taus (taua, taub, tauInt)
-  // helper function for taus
-  override def nexttaus(oldfullState: FullState, info: InitialInfo):FullState= {
+  /**
+    * Function for updating taus (tauz, tauInt)
+    */
+  override def nexttaus(oldfullState: FullState, info: InitialInfo): FullState = {
 
     //todo: check if acoef non set values create an issue
     var sumzj = 0.0
-    oldfullState.zcoefs.foreachValue( zcoef => {
+    oldfullState.zcoefs.foreachValue(zcoef => {
       sumzj += pow(zcoef - info.alphaPriorMean, 2)
     })
 
@@ -34,60 +43,61 @@ class SymmetricBoth extends SymmetricMain3 {
     upperTriangular(oldfullState.thcoefs).foreachValue(thcoef => {
       sumThetajk += pow(thcoef - info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
     })
-    sumThetajk += (info.noOfInters - info.sizeOfDouble)*pow(- info.thetaPriorMean, 2)
+    sumThetajk += (info.noOfInters - info.sizeOfDouble) * pow(-info.thetaPriorMean, 2)
     val njk = info.noOfInters // Number of levels of interactions
     val newtauZeta = breeze.stats.distributions.Gamma(info.aPrior + info.zetaLevels / 2.0, 1.0 / (info.bPrior + 0.5 * sumzj)).draw() //sample the precision of alpha from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
     oldfullState.copy(tauabth = DenseVector(newtauZeta, newtauTheta))
-    //oldfullState.copy(tauabth = DenseVector(0.385, 0.265))
   }
 
-  // Update indicators, interactions and final interaction coefficients
-  //Helper function for indicators and interactions
-  override def nextIndicsInters(oldfullState: FullState, info: InitialInfo): FullState= {
+  /**
+    * Function for updating indicators, interactions and final interaction coefficients
+    */
+  override def nextIndicsInters(oldfullState: FullState, info: InitialInfo): FullState = {
 
     val curIndicsEstim = (DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels))
     val curThetaEstim = (DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels))
     var count = 0.0
 
-    info.structureSorted.foreach( item => {
-      val j= item.a
+    info.structureSorted.foreach(item => {
+      val j = item.a
       val k = item.b
+
       // toDo: Njkkj is the same as item.list.length from structureSorted so see maybe it is not necessary to have calcAlphaBetaLength
-      // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
+      // Number of the observations that have alpha==j and beta==k and alpha==k and beta==j
       val Njkkj =
-      if(j==k) {info.structure.calcAlphaBetaLength(j,k)
-      }else{
-        info.structure.calcAlphaBetaLength(j,k) + info.structure.calcAlphaBetaLength(k,j)
+      if (j == k) {
+        info.structure.calcAlphaBetaLength(j, k)
+      } else {
+        info.structure.calcAlphaBetaLength(j, k) + info.structure.calcAlphaBetaLength(k, j)
       }
 
-      // the number of the observations that have alpha==j and beta==k and alpha==k and beta==j
-      // the sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
+      // Sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
       val SXjkkj =
-      if(j==k) {
-        info.structure.calcAlphaBetaSum(j,k)
-      } else{
-        info.structure.calcAlphaBetaSum(j,k) + info.structure.calcAlphaBetaSum(k,j)
-      }
+        if (j == k) {
+          info.structure.calcAlphaBetaSum(j, k)
+        } else {
+          info.structure.calcAlphaBetaSum(j, k) + info.structure.calcAlphaBetaSum(k, j)
+        }
 
       val u = breeze.stats.distributions.Uniform(0, 1).draw()
 
-      //log-sum-exp trick
+      // log-sum-exp trick
       val thcoef = oldfullState.thcoefs(item.a, item.b) // This is the same for (item.a, item.b) and (item.b, item.a) so it does not matter which one we use
-      val NoOfajForbk = info.structure.calcAlphaBetaLength(j,k) //No of observations for which a==j and b==k
-      val NoOfakForbj = info.structure.calcAlphaBetaLength(k,j) //No of observations for which a==k and b==j
+      val NoOfajForbk = info.structure.calcAlphaBetaLength(j, k) //No of observations for which a==j and b==k
+      val NoOfakForbj = info.structure.calcAlphaBetaLength(k, j) //No of observations for which a==k and b==j
 
-      def returnIfExists(dv: DenseVector[Double], ind: Int)={
-        if(ind < dv.length) dv(ind)
+      def returnIfExists(dv: DenseVector[Double], ind: Int) = {
+        if (ind < dv.length) dv(ind)
         else 0.0
       }
 
       val SigmaTheta =
-        if(j==k){
-          SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk*(returnIfExists(oldfullState.zcoefs, item.a) + returnIfExists(oldfullState.zcoefs, item.b))
-        }else{
-          SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk*(returnIfExists(oldfullState.zcoefs, item.a) + returnIfExists(oldfullState.zcoefs, item.b)) - NoOfakForbj*(returnIfExists(oldfullState.zcoefs, item.b) + returnIfExists(oldfullState.zcoefs, item.a))
+        if (j == k) {
+          SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk * (returnIfExists(oldfullState.zcoefs, item.a) + returnIfExists(oldfullState.zcoefs, item.b))
+        } else {
+          SXjkkj - Njkkj * oldfullState.mt(0) - NoOfajForbk * (returnIfExists(oldfullState.zcoefs, item.a) + returnIfExists(oldfullState.zcoefs, item.b)) - NoOfakForbj * (returnIfExists(oldfullState.zcoefs, item.b) + returnIfExists(oldfullState.zcoefs, item.a))
         }
 
       val logInitExp = oldfullState.mt(1) * thcoef * (SigmaTheta - 0.5 * Njkkj * thcoef)
@@ -111,19 +121,18 @@ class SymmetricBoth extends SymmetricMain3 {
       }
       else {
         //Update indicator and current interactions if indicator = 0.0
-        curIndicsEstim(item.a,item.b) = 0.0
+        curIndicsEstim(item.a, item.b) = 0.0
         curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
-        curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
+        curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
         curThetaEstim(item.b, item.a) = curThetaEstim(item.a, item.b)
       }
     })
-
-    oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
+    oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim *:* curIndicsEstim)
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/try")
-    val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
+    val filePath = getMainFilePath.concat("/try-SymmetricBoth10mScala")
+    val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv"),
       "taus" -> filePath.concat("taus.csv"),
       "zetas" -> filePath.concat("zetas.csv"),
       "thetas" -> filePath.concat("thetas.csv"),
