@@ -221,7 +221,7 @@ class SymmetricMain extends VariableSelection {
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/try10m")
+    val filePath = getFilesDirectory.concat("/try10m")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
       "taus" -> filePath.concat("taus.csv"),
       "zetas" -> filePath.concat("zetas.csv"),
@@ -232,6 +232,11 @@ class SymmetricMain extends VariableSelection {
     pathToFiles(param)
   }
 
-  override def getInputFilePath(): String = getMainFilePath.concat("/simulInterSymmetricMain.csv")
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
+
+  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricMain.csv")
+
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricMain.txt")
+
 
 }

@@ -6,7 +6,9 @@ import breeze.linalg.{*, DenseMatrix, csvread}
 import breeze.stats.mean
 
 abstract class VariableSelection {
+  def getFilesDirectory() : String
   def getInputFilePath(): String
+  def getOutputRuntimeFilePath() : String
   def variableSelection(info: InitialInfo): FullStateList
   protected def nextmutau(oldfullState: FullState, info: InitialInfo): FullState
   protected def nexttaus(oldfullState: FullState, info: InitialInfo):FullState
@@ -70,9 +72,6 @@ abstract class VariableSelection {
     breeze.linalg.csvwrite(outputFile, mergedMatrix, separator = ',')
   }
 
-  protected def getMainFilePath() : String ={
-    "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
-  }
 
   // Calculation of the execution time
   final def time[A](f: => A): A = {
@@ -80,8 +79,7 @@ abstract class VariableSelection {
     val ret = f
     val execTime = (System.nanoTime - s) / 1e6
     println("time: " + execTime + "ms")
-    val file = new File(getMainFilePath.concat("/ScalaRuntime10mAsymmetricBoth.txt"))
-    val bw = new BufferedWriter(new FileWriter(file))
+    val bw = new BufferedWriter(new FileWriter(new File(getOutputRuntimeFilePath())))
     bw.write(execTime.toString)
     bw.close()
     ret

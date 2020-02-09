@@ -131,7 +131,7 @@ class SymmetricBoth extends SymmetricMain {
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/try-SymmetricBoth10mScala")
+    val filePath = getFilesDirectory.concat("/try-SymmetricBoth10mScala")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv"),
       "taus" -> filePath.concat("taus.csv"),
       "zetas" -> filePath.concat("zetas.csv"),
@@ -142,6 +142,11 @@ class SymmetricBoth extends SymmetricMain {
     pathToFiles(param)
   }
 
-  override def getInputFilePath(): String = getMainFilePath.concat("/simulInterSymmetricBoth.csv")
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricBoth"
+
+  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricBoth.csv")
+
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricBoth.txt")
+
 
 }

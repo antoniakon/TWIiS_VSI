@@ -253,7 +253,7 @@ class AsymmetricBoth extends VariableSelection {
   }
 
   override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getMainFilePath.concat("/asymmetricBothCode10mScalaResNEWAfterFix-")
+    val filePath = getFilesDirectory.concat("/asymmetricBothCode10mScalaResNEWAfterFix-")
     val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv"),
       "taus" -> filePath.concat("taus.csv"),
       "alphas" -> filePath.concat("alphas.csv"),
@@ -265,6 +265,10 @@ class AsymmetricBoth extends VariableSelection {
     pathToFiles(param)
   }
 
-  override def getInputFilePath(): String = getMainFilePath.concat("/simulInterAsymmetricBoth.csv")
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
+
+  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterAsymmetricBoth.csv")
+
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mAsymmetricBoth.txt")
 
 }
