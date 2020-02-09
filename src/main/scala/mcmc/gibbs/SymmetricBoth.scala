@@ -11,7 +11,7 @@ import breeze.numerics.{exp, log, pow, sqrt}
   * Symmetric main effects: zs come from the same distribution
   * Symmetric Interactions: I_jk * theta_jk = I_kj * theta_kj
   **/
-class SymmetricBoth extends SymmetricMain3 {
+class SymmetricBoth extends SymmetricMain {
 
   override def variableSelection(info: InitialInfo): FullStateList = {
     // Initialise case class objects

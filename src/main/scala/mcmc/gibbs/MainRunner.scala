@@ -77,7 +77,6 @@ object MainRunner {
     object myAsymmetricBoth extends AsymmetricBoth
     object mySymmetricInters extends SymmetricInters
     object mySymmetricMain extends SymmetricMain
-    object mySymmetricMain3 extends SymmetricMain3
     object mySymmetricBoth extends SymmetricBoth
     myAsymmetricBoth
 
