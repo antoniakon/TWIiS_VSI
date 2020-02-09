@@ -234,7 +234,7 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
         case Some(listbuf) =>
           listbuf.map(tuple => (tuple, myStructure(tuple))).toMap
         case None =>
-          Map[(Int,Int),DVList]()
+          Map((0,0) -> new DVList())
       }
       returnedMap
     }

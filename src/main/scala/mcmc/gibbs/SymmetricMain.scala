@@ -172,14 +172,11 @@ class SymmetricMain extends VariableSelection {
     structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
   }
 
+  /**
+    * Add all the interaction effects for a given zeta which is double (zeta,zeta)
+    */
   def sumInterEffDoublesGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    //structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
-    val ifMapNonEmpty = structure.getAllDoubleZetasItemsForGivenZ(zetaIndex)
-    val sum = ifMapNonEmpty match {
-      case m: Map[(Int, Int), DVList] if m.isEmpty =>  0
-      case _ => ifMapNonEmpty.map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
-    }
-    sum
+    structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
   }
 
   /**
