@@ -25,7 +25,8 @@ class AsymmetricBoth extends VariableSelection {
     val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
 
-    calculateNewState(info.noOfIter, info, FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus), FullStateList(List(FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus))))
+    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus)
+        calculateAllStates(info.noOfIter, info, fullStateInit)
   }
 
   /**

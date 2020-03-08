@@ -17,8 +17,12 @@ abstract class VariableSelection {
   def printResults(statesResults: FullStateList): Unit
   protected def getFileNameToSaveResults(param: String): String
 
+  protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState): FullStateList = {
+    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
+  }
+
   @annotation.tailrec
-  protected final def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList = {
+  private final def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList = {
     if (n==0) fstateList
     else{
       println(n)
