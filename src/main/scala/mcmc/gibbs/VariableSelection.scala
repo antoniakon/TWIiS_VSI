@@ -18,23 +18,49 @@ abstract class VariableSelection {
   protected def getFileNameToSaveResults(param: String): String
 
   protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState): FullStateList = {
-    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
+    //with recursion
+//    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
+
+    //with stream
+    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
+      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
+
+//    val allStates = streamStates(info, fstate)
+//      //.drop(1000) //do not evaluate first 1000 iterations
+//      .take(info.noOfIter)
+//      .map{ case(info, fstate) => fstate }
+//      .toList
+//      .grouped(info.thin).map(_.head).toList
+
+    val allStates = streamStates(info, fstate)
+          //.drop(1000) //do not evaluate first 1000 iterations
+          .grouped(info.thin).map(_.head).take(info.noOfIter/info.thin)
+          .map{ case(info, fstate) => fstate }.toList
+
+    FullStateList(allStates)
+
   }
+
 
   @annotation.tailrec
   private final def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList = {
     if (n==0) fstateList
     else{
       println(n)
-      val latestmt = nextmutau(fstate, info)
-      val latesttaus = nexttaus(latestmt, info)
-      val latestcoefs = nextCoefs(latesttaus, info)
-      val latestFullyUpdatedState = nextIndicsInters(latestcoefs, info)
+      val latestFullyUpdatedState: FullState = calculateNextState(info, fstate)
       if((n % info.thin).equals(0)) {
         calculateNewState(n-1, info, latestFullyUpdatedState, FullStateList(latestFullyUpdatedState::fstateList.fstateL))
       }
       else calculateNewState(n-1, info, latestFullyUpdatedState, fstateList)
     }
+  }
+
+  private def calculateNextState(info: InitialInfo, fstate: FullState): FullState = {
+    val latestmt = nextmutau(fstate, info)
+    val latesttaus = nexttaus(latestmt, info)
+    val latestcoefs = nextCoefs(latesttaus, info)
+    val latestFullyUpdatedState = nextIndicsInters(latestcoefs, info)
+    latestFullyUpdatedState
   }
 
   protected final def calculateAndPrintCommons(statesResults: FullStateList): List[DenseMatrix[Double]] = {
