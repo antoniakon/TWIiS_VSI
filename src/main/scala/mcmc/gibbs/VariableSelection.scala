@@ -9,7 +9,7 @@ abstract class VariableSelection {
   def getFilesDirectory() : String
   def getInputFilePath(): String
   def getOutputRuntimeFilePath() : String
-  def variableSelection(info: InitialInfo): FullStateList
+  def variableSelection(info: InitialInfo)
   protected def nextmutau(oldfullState: FullState, info: InitialInfo): FullState
   protected def nexttaus(oldfullState: FullState, info: InitialInfo):FullState
   protected def nextCoefs(oldfullState: FullState, info: InitialInfo):FullState
@@ -17,7 +17,7 @@ abstract class VariableSelection {
   def printResults(statesResults: FullStateList): Unit
   protected def getFileNameToSaveResults(param: String): String
 
-  protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState): FullStateList = {
+  protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState) = {
     //with recursion
 //    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
 
@@ -34,7 +34,6 @@ abstract class VariableSelection {
       .map(_._1)
       .toList
 
-    FullStateList(allStates)
   }
 
 

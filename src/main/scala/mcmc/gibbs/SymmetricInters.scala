@@ -13,7 +13,7 @@ import breeze.numerics.{exp, log, pow, sqrt}
   **/
 class SymmetricInters extends AsymmetricBoth {
 
-  override def variableSelection(info: InitialInfo): FullStateList = {
+  override def variableSelection(info: InitialInfo) = {
     // Initialise case class objects
     val initmt = DenseVector[Double](0.0, 1.0)
     val inittaus = DenseVector[Double](1.0, 1.0, 1.0)
