@@ -19,20 +19,20 @@ abstract class VariableSelection {
 
   protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState) = {
     //with recursion
-//    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
+    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
 
     //with stream
-    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
-      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
-
-    val allStates = streamStates(info, fstate)
-          //.drop(1000) //do not evaluate first 1000 iterations
-          .take(info.noOfIter)
-      .map{ case(info, fstate) => fstate }
-      .zipWithIndex
-      .filter { case (_, i) => i % info.thin == 0}
-      .map(_._1)
-      .toList
+//    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
+//      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
+//
+//    val allStates = streamStates(info, fstate)
+//          //.drop(1000) //do not evaluate first 1000 iterations
+//          .take(info.noOfIter)
+//      .map{ case(info, fstate) => fstate }
+//      .zipWithIndex
+//      .filter { case (_, i) => i % info.thin == 0}
+//      .map(_._1)
+//      .toList
 
   }
 
