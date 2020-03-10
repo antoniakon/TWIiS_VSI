@@ -49,8 +49,8 @@ object MainRunner {
     val betaLevelsDist = beta.toArray.distinct.length
 
     // Parameters
-    val noOfIters = 10000000
-    val thin = 1000
+    val noOfIters = 100000
+    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -66,11 +66,11 @@ object MainRunner {
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
       a, b, aPrior, bPrior, p)
 
-    val statesResults =
+//    val statesResults =
       varSelectionObject.time(
         varSelectionObject.variableSelection(initialInfo)
       )
-    varSelectionObject.printResults(statesResults)
+//    varSelectionObject.printResults(statesResults)
   }
 
   private def getVariableSelectionVariant() : VariableSelection = {

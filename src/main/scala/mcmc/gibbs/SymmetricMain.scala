@@ -237,4 +237,6 @@ class SymmetricMain extends VariableSelection {
   override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricMain.txt")
 
 
+  override def printTitlesToFile(info: InitialInfo): Unit = { }
+  override def printToFile(fullStateList: FullStateList): Unit = { }
 }

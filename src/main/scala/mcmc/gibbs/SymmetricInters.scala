@@ -156,4 +156,8 @@ class SymmetricInters extends AsymmetricBoth {
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricInters.csv")
 
   override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricInters.txt")
+
+
+  override def printTitlesToFile(info: InitialInfo): Unit = { }
+  override def printToFile(fullStateList: FullStateList): Unit = { }
 }

@@ -150,4 +150,7 @@ class SymmetricBoth extends SymmetricMain {
   override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricBoth.txt")
 
 
+  override def printTitlesToFile(info: InitialInfo): Unit = { }
+  override def printToFile(fullStateList: FullStateList): Unit = { }
+
 }

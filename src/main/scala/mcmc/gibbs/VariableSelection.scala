@@ -1,6 +1,7 @@
 package mcmc.gibbs
 
 import java.io._
+import java.util.concurrent.Executors
 
 import breeze.linalg.{*, DenseMatrix, csvread}
 import breeze.stats.mean
@@ -16,26 +17,86 @@ abstract class VariableSelection {
   protected def nextIndicsInters(oldfullState: FullState, info: InitialInfo):FullState
   def printResults(statesResults: FullStateList): Unit
   protected def getFileNameToSaveResults(param: String): String
+  private val executor = Executors.newSingleThreadExecutor()
 
   protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState) = {
     //with recursion
-    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
+//    calculateNewState(n, info, fstate, FullStateList(List(fstate)))
 
-    //with stream
-//    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
-//      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
-//
-//    val allStates = streamStates(info, fstate)
-//          //.drop(1000) //do not evaluate first 1000 iterations
-//          .take(info.noOfIter)
-//      .map{ case(info, fstate) => fstate }
-//      .zipWithIndex
-//      .filter { case (_, i) => i % info.thin == 0}
-//      .map(_._1)
-//      .toList
+    printTitlesToFile(info)
+
+    val writeBufferSize = 1000
+    val wantedIterations = writeBufferSize * info.thin
+
+    var remainingIterations = n
+
+    var lastState = fstate
+    while (remainingIterations > 0) {
+
+      val iterations = if (remainingIterations >= wantedIterations) {
+        wantedIterations
+      } else {
+        remainingIterations
+      }
+      remainingIterations -= wantedIterations
+
+      val toWrite = calculateNewState(iterations, info, lastState, FullStateList(List(fstate)))
+      lastState = toWrite.fstateL.head
+      //now write this buffer
+      executor.execute { () => printToFile(toWrite) }
+
+    }
+    executor.shutdown()
 
   }
 
+  protected final def calculateAllStatesWithStream(n:Int, info: InitialInfo, fstate:FullState) = {
+    // With stream values are stored in reverse, head: init
+    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
+      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
+
+    printTitlesToFile(info)
+
+    val writeBufferSize = 1000
+    val wantedIterations = writeBufferSize * info.thin
+
+    var remainingIterations = n
+
+    var lastState = fstate
+    while (remainingIterations > 0) {
+
+      val iterations = if (remainingIterations >= wantedIterations) {
+        wantedIterations
+      } else {
+        remainingIterations
+      }
+      remainingIterations -= wantedIterations
+
+
+      val toWrite = streamStates(info, lastState)
+        //.drop(1000) //do not evaluate first 1000 iterations
+        .take(iterations)
+        .map{ case(info, fstate) => fstate }
+        .zipWithIndex
+        .filter { case (_, i) => i % info.thin == 0}
+        .map(_._1)
+        .toList
+
+      lastState = toWrite.head
+      //now write this buffer
+      executor.execute { () => printToFile(FullStateList(toWrite)) }
+
+    }
+    executor.shutdown()
+
+
+
+
+  }
+
+  protected def printTitlesToFile(initialInfo: InitialInfo): Unit
+
+  protected def printToFile(fullStateList: FullStateList): Unit
 
   @annotation.tailrec
   private final def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList = {
