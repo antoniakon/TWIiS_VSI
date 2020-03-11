@@ -40,8 +40,8 @@ abstract class VariableSelection {
       }
       remainingIterations -= wantedIterations
 
-      val toWrite = calculateNewState(iterations, info, lastState, FullStateList(List(fstate)))
-      lastState = toWrite.fstateL.head
+      val toWrite = calculateNewState(iterations, info, lastState, FullStateList(Vector()))
+      lastState = toWrite.fstateL.last
       //now write this buffer
       executor.execute { () => printToFile(toWrite) }
 
@@ -50,49 +50,49 @@ abstract class VariableSelection {
 
   }
 
-  protected final def calculateAllStatesWithStream(n:Int, info: InitialInfo, fstate:FullState) = {
-    // With stream values are stored in reverse, head: init
-    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
-      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
-
-    printTitlesToFile(info)
-
-    val writeBufferSize = 1000
-    val wantedIterations = writeBufferSize * info.thin
-
-    var remainingIterations = n
-
-    var lastState = fstate
-    while (remainingIterations > 0) {
-
-      val iterations = if (remainingIterations >= wantedIterations) {
-        wantedIterations
-      } else {
-        remainingIterations
-      }
-      remainingIterations -= wantedIterations
-
-
-      val toWrite = streamStates(info, lastState)
-        //.drop(1000) //do not evaluate first 1000 iterations
-        .take(iterations)
-        .map{ case(info, fstate) => fstate }
-        .zipWithIndex
-        .filter { case (_, i) => i % info.thin == 0}
-        .map(_._1)
-        .toList
-
-      lastState = toWrite.head
-      //now write this buffer
-      executor.execute { () => printToFile(FullStateList(toWrite)) }
-
-    }
-    executor.shutdown()
-
-
-
-
-  }
+//  protected final def calculateAllStatesWithStream(n:Int, info: InitialInfo, fstate:FullState) = {
+//    // With stream values are stored in reverse, head: init
+//    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
+//      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
+//
+//    printTitlesToFile(info)
+//
+//    val writeBufferSize = 1000
+//    val wantedIterations = writeBufferSize * info.thin
+//
+//    var remainingIterations = n
+//
+//    var lastState = fstate
+//    while (remainingIterations > 0) {
+//
+//      val iterations = if (remainingIterations >= wantedIterations) {
+//        wantedIterations
+//      } else {
+//        remainingIterations
+//      }
+//      remainingIterations -= wantedIterations
+//
+//
+//      val toWrite = streamStates(info, lastState)
+//        //.drop(1000) //do not evaluate first 1000 iterations
+//        .take(iterations)
+//        .map{ case(info, fstate) => fstate }
+//        .zipWithIndex
+//        .filter { case (_, i) => i % info.thin == 0}
+//        .map(_._1)
+//        .toList
+//
+//      lastState = toWrite.head
+//      //now write this buffer
+//      executor.execute { () => printToFile(FullStateList(toWrite)) }
+//
+//    }
+//    executor.shutdown()
+//
+//
+//
+//
+//  }
 
   protected def printTitlesToFile(initialInfo: InitialInfo): Unit
 
@@ -105,7 +105,7 @@ abstract class VariableSelection {
       println(n)
       val latestFullyUpdatedState: FullState = calculateNextState(info, fstate)
       if((n % info.thin).equals(0)) {
-        calculateNewState(n-1, info, latestFullyUpdatedState, FullStateList(latestFullyUpdatedState::fstateList.fstateL))
+        calculateNewState(n-1, info, latestFullyUpdatedState, FullStateList(fstateList.fstateL :+ latestFullyUpdatedState))
       }
       else calculateNewState(n-1, info, latestFullyUpdatedState, fstateList)
     }
