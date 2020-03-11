@@ -67,7 +67,8 @@ class AsymmetricBoth extends VariableSelection {
       sumThetajk += pow(thcoef - info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
     })
 
-    val njk = info.alphaLevelsDist * info.betaLevelsDist // Number of levels of interactions
+    val njk = info.structure.sizeOfStructure() // Number of levels of interactions
+    
     //TODO: maybe above needs to be val njk = info.structure.sizeOfStructure() // Number of levels of interactions
     val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
     val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
