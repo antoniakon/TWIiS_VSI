@@ -240,7 +240,7 @@ class SymmetricMain extends VariableSelection {
         .append(",")
         .append( fullstate.zcoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
         .append(",")
-        .append( fullstate.thcoefs.toArray.map { theta => theta.toString }.mkString(",") )
+        .append( fullstate.finalCoefs.toArray.map { theta => theta.toString }.mkString(",") )
         .append(",")
         .append( fullstate.indics.toArray.map { ind => ind.toString }.mkString(",") )
         .append("\n")

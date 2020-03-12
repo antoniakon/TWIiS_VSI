@@ -190,7 +190,7 @@ class SymmetricInters extends AsymmetricBoth {
         .append(",")
         .append( fullstate.bcoefs.toArray.map { beta => beta.toString }.mkString(",") )
         .append(",")
-        .append( fullstate.thcoefs.toArray.map { theta => theta.toString }.mkString(",") )
+        .append( fullstate.finalCoefs.toArray.map { theta => theta.toString }.mkString(",") )
         .append(",")
         .append( fullstate.indics.toArray.map { ind => ind.toString }.mkString(",") )
         .append("\n")
