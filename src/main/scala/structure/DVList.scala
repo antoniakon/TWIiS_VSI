@@ -26,7 +26,7 @@ class DVList {
   }
 
   override def toString = {
-    sum.toString
+    list.toString
   }
 
 }

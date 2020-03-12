@@ -1,10 +1,9 @@
 package mcmc.gibbs
 
-import breeze.linalg.{*, DenseMatrix, DenseVector, max}
+import java.io.{File, FileWriter, PrintWriter}
+import breeze.linalg.{DenseMatrix, DenseVector, max}
 import breeze.numerics.{exp, log, pow, sqrt}
-import breeze.stats.mean
 import structure.DVStructure
-import structure.DVList
 
 /**
   * Variable selection with Gibbs sampler. Implementation for symmetric main effects and asymmetric interactions.
@@ -194,49 +193,59 @@ class SymmetricMain extends VariableSelection {
     sum
   }
 
-  override def printResults(statesResults: FullStateList): Unit = {
-    println("zetas")
-    val zcoefficients = statesResults.fstateL.map(f => f.zcoefs)
-    val zcoefMat = DenseMatrix(zcoefficients.map(_.toArray): _*)
-    val meanValsZcoef = mean(zcoefMat(::, *))
-    println(meanValsZcoef)
-
-    val matrices = calculateAndPrintCommons(statesResults)
-
-    // Save the results to a csv file
-    val noOfInters = matrices(2).cols
-    val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), zcoefMat, matrices(2), matrices(3))
-    saveToCSV(mergedMatrix, getFileNameToSaveResults("allcoefs"))
-    //    saveToCSV(matrices(0), getFileNameToSaveResults("mutau"))
-    //    saveToCSV(matrices(1), getFileNameToSaveResults("taus"))
-    //    saveToCSV(zcoefMat, getFileNameToSaveResults("zetas"))
-    //    saveToCSV(matrices(2), getFileNameToSaveResults("thetas"))
-    //    saveToCSV(matrices(2)(::, 0 to noOfInters/2), getFileNameToSaveResults("thetas1"))
-    //    saveToCSV(matrices(2)(::, (noOfInters/2)+1 to noOfInters-1), getFileNameToSaveResults("thetas2"))
-    //    saveToCSV(matrices(3)(::, 0 to noOfInters/2), getFileNameToSaveResults("indics1"))
-    //    saveToCSV(matrices(3)(::, (noOfInters/2)+1 to noOfInters-1), getFileNameToSaveResults("indics2"))
-    //    saveToCSV(matrices(3), getFileNameToSaveResults("indics"))
-  }
-
-  override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getFilesDirectory.concat("/try10m")
-    val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv") ,
-      "taus" -> filePath.concat("taus.csv"),
-      "zetas" -> filePath.concat("zetas.csv"),
-      "thetas" -> filePath.concat("thetas.csv"),
-      "indics" -> filePath.concat("indics.csv"),
-      "allcoefs" -> filePath.concat("allcoefs.csv")
-    )
-    pathToFiles(param)
-  }
-
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricMarch/symmetricMain"
 
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricMain.csv")
 
   override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricMain.txt")
 
+  override def getOutputFilePath(): String = getFilesDirectory.concat("/symmetricMainScalaRes.csv")
 
-  override def printTitlesToFile(info: InitialInfo): Unit = { }
-  override def printToFile(fullStateList: FullStateList): Unit = { }
+  override def printTitlesToFile(info: InitialInfo): Unit = {
+    val pw = new PrintWriter(new File(getOutputFilePath()))
+
+    val thetaTitles = (1 to info.betaLevels)
+      .map { j => "-".concat(j.toString) }
+      .map { entry =>
+        (1 to info.alphaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
+      }.mkString(",")
+
+    val indicsTitles = (1 to info.betaLevels)
+      .map { j => "-".concat(j.toString) }
+      .map { entry =>
+        (1 to info.alphaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
+      }.mkString(",")
+
+    pw.append("mu ,tau, tauz, tauInt,")
+      .append( (1 to info.zetaLevels).map { i => "zeta".concat(i.toString) }.mkString(",") )
+      .append(",")
+      .append(thetaTitles)
+      .append(",")
+      .append(indicsTitles)
+      .append("\n")
+
+    pw.close()
+  }
+
+  override def printToFile(fullStateList: FullStateList): Unit = {
+    val pw = new PrintWriter(new FileWriter(getOutputFilePath(), true))
+
+    fullStateList.fstateL.foreach { fullstate =>
+      pw
+        .append(fullstate.mt(0).toString)
+        .append(",")
+        .append(fullstate.mt(1).toString)
+        .append(",")
+        .append( fullstate.tauabth.toArray.map { tau => tau.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.zcoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.thcoefs.toArray.map { theta => theta.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.indics.toArray.map { ind => ind.toString }.mkString(",") )
+        .append("\n")
+    }
+    pw.close()
+  }
+
 }

@@ -1,11 +1,9 @@
 package mcmc.gibbs
 
 import java.io.{File, FileWriter, PrintWriter}
-
 import breeze.linalg.{*, DenseMatrix, DenseVector, max}
 import breeze.numerics.{exp, log, pow, sqrt}
 import structure.DVStructure
-import breeze.stats.mean
 
 /**
   * Variable selection with Gibbs sampler. Implementation for asymmetric main effects and asymmetric interactions.
@@ -29,6 +27,8 @@ class AsymmetricBoth extends VariableSelection {
 
     val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus)
         calculateAllStates(info.noOfIter, info, fullStateInit)
+
+
   }
 
   /**
@@ -72,7 +72,7 @@ class AsymmetricBoth extends VariableSelection {
     //TODO: maybe above needs to be val njk = info.structure.sizeOfStructure() // Number of levels of interactions
     val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
     val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
-    val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
+    val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 /(info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
 
     oldfullState.copy(tauabth = DenseVector(newtauAlpha, newtauBeta, newtauTheta))
   }
@@ -229,55 +229,16 @@ class AsymmetricBoth extends VariableSelection {
     sum
   }
 
-  override def printResults(statesResults: FullStateList): Unit = {
-    println("alphas")
-    val acoefficients = statesResults.fstateL.map(f => f.acoefs)
-    //println(acoefficients)
-    val acoefMat = DenseMatrix(acoefficients.map(_.toArray): _*)
-    val meanValsAcoef = mean(acoefMat(::, *))
-    println(meanValsAcoef)
-
-    println("betas")
-    val bcoefficients = statesResults.fstateL.map(f => f.bcoefs)
-    val bcoefMat = DenseMatrix(bcoefficients.map(_.toArray): _*)
-    val meanValsBcoef = mean(bcoefMat(::, *))
-    println(meanValsBcoef)
-
-    val matrices = calculateAndPrintCommons(statesResults)
-
-    // Save the results to a csv file
-   val mergedMatrix = DenseMatrix.horzcat(matrices(0), matrices(1), acoefMat, bcoefMat, matrices(2), matrices(3))
-    saveToCSV(mergedMatrix, getFileNameToSaveResults("allcoefs"))
-    //    saveToCSV(matrices(0), getFileNameToSaveResults("mutau"))
-    //    saveToCSV(matrices(1), getFileNameToSaveResults("taus"))
-    //    saveToCSV(acoefMat, getFileNameToSaveResults("alphas"))
-    //    saveToCSV(bcoefMat, getFileNameToSaveResults("betas"))
-    //    saveToCSV(matrices(2), getFileNameToSaveResults("thetas"))
-    //    saveToCSV(matrices(3), getFileNameToSaveResults("indics"))
-  }
-
-  override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getFilesDirectory.concat("/asymmetricBothTimings-")
-    val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv"),
-      "taus" -> filePath.concat("taus.csv"),
-      "alphas" -> filePath.concat("alphas.csv"),
-      "betas" -> filePath.concat("betas.csv"),
-      "thetas" -> filePath.concat("thetas.csv"),
-      "indics" -> filePath.concat("indics.csv"),
-      "allcoefs" -> filePath.concat("allcoefs.csv")
-    )
-    pathToFiles(param)
-  }
-
   override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricMarch/asymmetricBoth"
 
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterAsymmetricBoth.csv")
 
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime100kAsymmetricBothTimings.txt")
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime1m15x20AsymmetricBothNewWay.txt")
 
+  override def getOutputFilePath(): String = getFilesDirectory.concat("/asymmetricBothScalaRes.csv")
 
   override def printTitlesToFile(info: InitialInfo): Unit = {
-    val pw = new PrintWriter(new File(getFileNameToSaveResults("allcoefs")))
+    val pw = new PrintWriter(new File(getOutputFilePath))
 
     val thetaTitles = (1 to info.betaLevels)
       .map { j => "-".concat(j.toString) }
@@ -285,15 +246,11 @@ class AsymmetricBoth extends VariableSelection {
         (1 to info.alphaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    println(thetaTitles)
-
     val indicsTitles = (1 to info.betaLevels)
       .map { j => "-".concat(j.toString) }
       .map { entry =>
-        (1 to info.alphaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
+        (1 to info.alphaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
-
-    println(indicsTitles)
 
     pw.append("mu ,tau, taua, taub, tauInt,")
       .append( (1 to info.alphaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
@@ -309,7 +266,7 @@ class AsymmetricBoth extends VariableSelection {
   }
 
   override def printToFile(fullStateList: FullStateList): Unit = {
-    val pw = new PrintWriter(new FileWriter(getFileNameToSaveResults("allcoefs"), true))
+    val pw = new PrintWriter(new FileWriter(getOutputFilePath(), true))
 
     fullStateList.fstateL.foreach { fullstate =>
       pw
@@ -327,11 +284,8 @@ class AsymmetricBoth extends VariableSelection {
         .append(",")
         .append( fullstate.indics.toArray.map { ind => ind.toString }.mkString(",") )
         .append("\n")
-
     }
     pw.close()
-
   }
-
 
 }

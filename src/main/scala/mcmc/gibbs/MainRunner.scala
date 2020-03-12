@@ -1,10 +1,8 @@
 package mcmc.gibbs
 
 import java.io.File
-
 import breeze.linalg.{DenseVector, csvread, max}
 import structure.{DVStructure, DVStructureIndexedMap}
-
 import scala.io.StdIn.readLine
 
 object MainRunner {
@@ -42,7 +40,7 @@ object MainRunner {
     val structureSorted : DVStructure = new DVStructureIndexedMap(y, alphaSorted, betaSorted) // Sorted structure to be used for the indices to run through the data but not repeat e.g. only (1,3) and not (3,1)
     val noOfInters = structureSorted.sizeOfStructure()
     val zetaLevels = max(alphaLevels, betaLevels)
-    println(zetaLevels)
+
     val sizeofDouble = structure.sizeOfDouble()
     //Used for SymmetricMain
     val alphaLevelsDist = alpha.toArray.distinct.length
@@ -66,11 +64,9 @@ object MainRunner {
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
       a, b, aPrior, bPrior, p)
 
-//    val statesResults =
-      varSelectionObject.time(
-        varSelectionObject.variableSelection(initialInfo)
-      )
-//    varSelectionObject.printResults(statesResults)
+    varSelectionObject.time(
+      varSelectionObject.variableSelection(initialInfo)
+    )
   }
 
   private def getVariableSelectionVariant() : VariableSelection = {
@@ -79,9 +75,6 @@ object MainRunner {
     object mySymmetricMain extends SymmetricMain
     object mySymmetricBoth extends SymmetricBoth
     myAsymmetricBoth
-
-
   }
-
 }
 

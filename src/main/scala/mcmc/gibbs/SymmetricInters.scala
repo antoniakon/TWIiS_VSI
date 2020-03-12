@@ -1,5 +1,6 @@
 package mcmc.gibbs
 
+import java.io.{File, FileWriter, PrintWriter}
 import breeze.linalg.{DenseMatrix, DenseVector, max, upperTriangular}
 import breeze.numerics.{exp, log, pow, sqrt}
 
@@ -138,26 +139,63 @@ class SymmetricInters extends AsymmetricBoth {
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim *:* curIndicsEstim)
   }
 
-  override protected def getFileNameToSaveResults(param: String): String = {
-    val filePath = getFilesDirectory.concat("/SymmetricInters10mNew-")
-    val pathToFiles = Map("mutau" -> filePath.concat("mutau.csv"),
-      "taus" -> filePath.concat("taus.csv"),
-      "alphas" -> filePath.concat("alphas.csv"),
-      "betas" -> filePath.concat("betas.csv"),
-      "thetas" -> filePath.concat("thetas.csv"),
-      "indics" -> filePath.concat("indics.csv"),
-      "allcoefs" -> filePath.concat("allcoefs.csv")
-    )
-    pathToFiles(param)
-  }
-
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricInters"
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricMarch/symmetricInters"
 
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricInters.csv")
 
   override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricInters.txt")
 
+  override def getOutputFilePath(): String = getFilesDirectory.concat("/symmetricIntersScalaRes.csv")
 
-  override def printTitlesToFile(info: InitialInfo): Unit = { }
-  override def printToFile(fullStateList: FullStateList): Unit = { }
+  override def printTitlesToFile(info: InitialInfo): Unit = {
+    val pw = new PrintWriter(new File(getOutputFilePath()))
+
+    val thetaTitles = (1 to info.betaLevels)
+      .map { j => "-".concat(j.toString) }
+      .map { entry =>
+        (1 to info.alphaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
+      }.mkString(",")
+
+    val indicsTitles = (1 to info.betaLevels)
+      .map { j => "-".concat(j.toString) }
+      .map { entry =>
+        (1 to info.alphaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
+      }.mkString(",")
+
+    pw.append("mu ,tau, taua, taub, tauInt,")
+      .append( (1 to info.alphaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
+      .append(",")
+      .append( (1 to info.betaLevels).map { i => "beta".concat(i.toString) }.mkString(",") )
+      .append(",")
+      .append(thetaTitles)
+      .append(",")
+      .append(indicsTitles)
+      .append("\n")
+
+    pw.close()
+  }
+
+  override def printToFile(fullStateList: FullStateList): Unit = {
+    val pw = new PrintWriter(new FileWriter(getOutputFilePath(), true))
+
+    fullStateList.fstateL.foreach { fullstate =>
+      pw
+        .append(fullstate.mt(0).toString)
+        .append(",")
+        .append(fullstate.mt(1).toString)
+        .append(",")
+        .append( fullstate.tauabth.toArray.map { tau => tau.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.acoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.bcoefs.toArray.map { beta => beta.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.thcoefs.toArray.map { theta => theta.toString }.mkString(",") )
+        .append(",")
+        .append( fullstate.indics.toArray.map { ind => ind.toString }.mkString(",") )
+        .append("\n")
+    }
+    pw.close()
+  }
+
 }
