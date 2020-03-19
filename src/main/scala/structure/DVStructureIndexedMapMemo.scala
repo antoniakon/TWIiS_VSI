@@ -16,6 +16,8 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   private var zetaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndicesWithoutDoubles = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndicesDoubles = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
+  private var allItemsMappedbyA = Map[Int, List[DVItem]]()
+  private var allItemsMappedbyB = Map[Int, List[DVItem]]()
 
   //private val myStructure: TreeMap[(Int, Int), DVList] = initMap()
   init()
@@ -56,8 +58,8 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
       zetaIndicesWithoutDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1!=a._2))}
       zetaIndicesDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1==a._2))}.filter(v1 => v1._2.nonEmpty) //Includes only the double z without the zs that do not have doubles
       myStructure((curAlpha, curBeta)).addItem(y(i))
-
     }
+
   }
   val memoizedCalcAlphaSum: Int => Double = Memo.immutableHashMapMemo {
     num => alphaIndices(num).map(tuple => myStructure(tuple).sum).sum
@@ -102,34 +104,42 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     memoizedCalcBetaLength(k)
   }
 
+  val memoizedcalcAlphaBetaLength:  Tuple2[Int, Int] => Double = Memo.immutableHashMapMemo {
+    // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
+    num => {val lengthMaybe = myStructure.get(num._1,num._2)
+      val length = lengthMaybe match {
+        case Some(dvlist) =>
+          dvlist.length
+        case None =>
+          0
+      }
+      length}
+  }
+
   /**
     * Calculates the number of the responses y for a given alpha and beta
     */
   override def calcAlphaBetaLength(j: Int, k: Int): Double = {
+    memoizedcalcAlphaBetaLength(j,k)
+  }
+
+  val memoizedcalcAlphaBetaSum:  Tuple2[Int, Int] => Double = Memo.immutableHashMapMemo {
     // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
-    val lengthMaybe = myStructure.get(j,k)
-    val length = lengthMaybe match {
-      case Some(dvlist) =>
-        dvlist.length
-      case None =>
-        0
-    }
-    length
+    num => {val lengthMaybe = myStructure.get(num._1,num._2)
+      val sum = lengthMaybe match {
+        case Some(dvlist) =>
+          dvlist.sum
+        case None =>
+          0
+      }
+      sum}
   }
 
   /**
     * Calculates the sum of the responses y for a given alpha and beta
     */
   override def calcAlphaBetaSum(j: Int, k: Int): Double = {
-    // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
-    val lengthMaybe = myStructure.get(j,k)
-    val sum = lengthMaybe match {
-      case Some(dvlist) =>
-        dvlist.sum
-      case None =>
-        0
-    }
-    sum
+    memoizedcalcAlphaBetaSum(j,k)
   }
 
   /**
@@ -143,46 +153,55 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     myStructure.foreach( item => f(new DVItem(item._1._1, item._1._2, item._2)) )
   }
 
+  val memoizedgetAllItemsForGivenA: Int => List[DVItem] = Memo.immutableHashMapMemo {
+    num => {val ifaexists = alphaIndices.get(num)
+      val res = ifaexists match {
+        case Some(tups) =>
+          tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
+            .toList
+        case None => List[DVItem]()
+      }
+      res}
+  }
   /**
     * For a given a it returns a list of items  DVItem(a: Int,b: Int,list: DVList)
     */
   override def getAllItemsForGivenA(a: Int): List[DVItem] = {
-    val ifaexists = alphaIndices.get(a)
-    val res = ifaexists match {
-      case Some(tups) =>
-        tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
-          .toList
-      case None => List[DVItem]()
-    }
-    res
+    memoizedgetAllItemsForGivenA(a)
+  }
+
+  val memoizedgetAllItemsForGivenB: Int => List[DVItem] = Memo.immutableHashMapMemo {
+    num => { val ifbexists = betaIndices.get(num)
+      val res = ifbexists match {
+        case Some(tups) =>
+          tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
+            .toList
+        case None => List[DVItem]()
+      }
+      res}
   }
 
   /**
     * For a given b it returns a list of items  DVItem(a: Int,b: Int,list: DVList)
     */
   override def getAllItemsForGivenB(b: Int): List[DVItem] = {
-    val ifbexists = betaIndices.get(b)
-    val res = ifbexists match {
-      case Some(tups) =>
-        tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
-          .toList
-      case None => List[DVItem]()
-    }
-    res
+    memoizedgetAllItemsForGivenB(b)
   }
 
+  allItemsMappedbyA = alphaIndices.map(x => (x._1, getAllItemsForGivenA(x._1))).toMap
+  allItemsMappedbyB = betaIndices.map(x => (x._1, getAllItemsForGivenB(x._1))).toMap
   /**
     * It returns a Map[Int, List[DVItem]], where the keys are the a's
     */
   override def getAllItemsMappedByA(): Map[Int, List[DVItem]] = {
-    alphaIndices.map(x => (x._1, getAllItemsForGivenA(x._1))).toMap
+    allItemsMappedbyA
   }
 
   /**
     * It returns a Map[Int, List[DVItem]], where the keys are the b's
     */
   override def getAllItemsMappedByB(): Map[Int, List[DVItem]] = {
-    betaIndices.map(x => (x._1, getAllItemsForGivenB(x._1))).toMap
+    allItemsMappedbyB
   }
 
   /**
