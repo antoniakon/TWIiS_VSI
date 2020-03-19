@@ -1,8 +1,8 @@
 package structure
 
 import breeze.linalg.{DenseVector, max}
-
 import scala.collection.mutable.ListBuffer
+import scalaz.Memo
 
 class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
@@ -59,49 +59,47 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
 
     }
   }
-
+  val memoizedCalcAlphaSum: Int => Double = Memo.immutableHashMapMemo {
+    num => alphaIndices(num).map(tuple => myStructure(tuple).sum).sum
+  }
 
   /**
     * Calculates the sum of the response y for a given alpha
     */
   override def calcAlphaSum(j: Int): Double = {
     memoizedCalcAlphaSum(j)
-    //    val sum = alphaIndices(j).map(tuple => myStructure(tuple).sum).sum
-    //    sum
+
   }
 
-  val cache = collection.mutable.Map.empty[Int, Double]
-  def memoizedCalcAlphaSum: Int => Double = {
-    num =>
-      cache.getOrElse(num, {
-        print(s"\n Calculating since input ${num} hasn't seen before and caching the output")
-        cache update(num, alphaIndices(num).map(tuple => myStructure(tuple).sum).sum)
-        cache(num)
-      })
+  val memoizedCalcBetaSum: Int => Double = Memo.immutableHashMapMemo {
+    num => betaIndices(num).map(tuple => myStructure(tuple).sum).sum
   }
 
   /**
     * Calculates the sum of the response y for a given beta
     */
   override def calcBetaSum(k: Int): Double = {
-    val sum = betaIndices(k).map(tuple => myStructure(tuple).sum).sum
-    sum
+    memoizedCalcBetaSum(k)
   }
 
+  val memoizedCalcAlphaLength: Int => Double = Memo.immutableHashMapMemo {
+    num => alphaIndices(num).map(tuple => myStructure(tuple).length).sum
+  }
   /**
     * Calculates the number of the responses y for a given alpha
     */
   override def calcAlphaLength(j: Int): Double = {
-    val length = alphaIndices(j).map(tuple => myStructure(tuple).length).sum
-    length
+    memoizedCalcAlphaLength(j)
   }
 
+  val memoizedCalcBetaLength: Int => Double = Memo.immutableHashMapMemo {
+    num => betaIndices(num).map(tuple => myStructure(tuple).length).sum
+  }
   /**
     * Calculates the number of the responses y for a given beta
     */
   override def calcBetaLength(k: Int): Double = {
-    val length = betaIndices(k).map(tuple => myStructure(tuple).length).sum
-    length
+    memoizedCalcBetaLength(k)
   }
 
   /**
