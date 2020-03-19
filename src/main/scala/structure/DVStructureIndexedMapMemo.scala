@@ -65,10 +65,20 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     * Calculates the sum of the response y for a given alpha
     */
   override def calcAlphaSum(j: Int): Double = {
-    val sum = alphaIndices(j).map(tuple => myStructure(tuple).sum).sum
-    sum
+    memoizedCalcAlphaSum(j)
+    //    val sum = alphaIndices(j).map(tuple => myStructure(tuple).sum).sum
+    //    sum
   }
 
+  val cache = collection.mutable.Map.empty[Int, Double]
+  def memoizedCalcAlphaSum: Int => Double = {
+    num =>
+      cache.getOrElse(num, {
+        print(s"\n Calculating since input ${num} hasn't seen before and caching the output")
+        cache update(num, alphaIndices(num).map(tuple => myStructure(tuple).sum).sum)
+        cache(num)
+      })
+  }
 
   /**
     * Calculates the sum of the response y for a given beta
