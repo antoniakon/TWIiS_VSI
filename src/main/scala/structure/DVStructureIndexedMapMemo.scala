@@ -19,7 +19,6 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   private var allItemsMappedbyA = Map[Int, List[DVItem]]()
   private var allItemsMappedbyB = Map[Int, List[DVItem]]()
 
-  //private val myStructure: TreeMap[(Int, Int), DVList] = initMap()
   init()
 
   private def init(): Unit = {
@@ -204,76 +203,94 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     allItemsMappedbyB
   }
 
+  val memoizedCalcZetaSum: Int => Double = Memo.immutableHashMapMemo {
+    num => zetaIndicesWithoutDoubles(num).map(tuple => myStructure(tuple).sum).sum
+  }
+
   /**
     * Calculates the sum of the response y for a given zeta
     */
   override def calcZetaSum(zj: Int): Double = {
-    val sum = zetaIndicesWithoutDoubles(zj).map(tuple => myStructure(tuple).sum).sum
-    sum
+    memoizedCalcZetaSum(zj)
+  }
+
+  val memoizedCalcZetaLength: Int => Double = Memo.immutableHashMapMemo {
+    num => zetaIndicesWithoutDoubles(num).map(tuple => myStructure(tuple).length).sum
   }
 
   /**
     * Calculates the number of the responses y for a given zeta
     */
   override def calcZetaLength(zj: Int): Double = {
-    val length = zetaIndicesWithoutDoubles(zj).map(tuple => myStructure(tuple).length).sum
-    length
+    memoizedCalcZetaLength(zj)
+  }
+
+  val memoizedCalcDoubleZetaSum: Int => Double = Memo.immutableHashMapMemo {
+    num => { val lengthMaybe = zetaIndicesDoubles.get(num)
+      val sum = lengthMaybe match {
+        case Some(listbuf) =>
+          listbuf.map(tuple => myStructure(tuple).sum).sum
+        case None =>
+          0
+      }
+      sum}
   }
 
   /**
     * Calculates the sum of the response y for a given zeta
     */
   override def calcDoubleZetaSum(zj: Int): Double = {
-    // val sum = zetaIndicesDoubles(zj).map(tuple => myStructure(tuple).sum).sum
-    val lengthMaybe = zetaIndicesDoubles.get(zj)
-    val sum = lengthMaybe match {
-      case Some(listbuf) =>
-        listbuf.map(tuple => myStructure(tuple).sum).sum
-      case None =>
-        0
-    }
-    sum
+    memoizedCalcDoubleZetaSum(zj)
+  }
+
+  val memoizedCalcDoubleZetaLength: Int => Double = Memo.immutableHashMapMemo {
+    num => { val lengthMaybe = zetaIndicesDoubles.get(num)
+      val length = lengthMaybe match {
+        case Some(listbuf) =>
+          listbuf.map(tuple => myStructure(tuple).length).sum
+        case None =>
+          0
+      }
+      length}
   }
 
   /**
     * Calculates the number of the responses y for a given zeta
     */
   override def calcDoubleZetaLength(zj: Int): Double = {
-    //val length = zetaIndicesDoubles(zj).map(tuple => myStructure(tuple).length).sum
-    val lengthMaybe = zetaIndicesDoubles.get(zj)
-    val length = lengthMaybe match {
-      case Some(listbuf) =>
-        listbuf.map(tuple => myStructure(tuple).length).sum
-      case None =>
-        0
-    }
-    length
+    memoizedCalcDoubleZetaLength(zj)
   }
 
+  val memoizedAllOtherZetasItemsForGivenZ: Int => Map[(Int,Int),DVList] = Memo.immutableHashMapMemo {
+    num => zetaIndicesWithoutDoubles(num).map(tuple => (tuple, myStructure(tuple))).toMap
+  }
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second without being in both
     */
-  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = zetaIndicesWithoutDoubles(z).map(tuple => (tuple, myStructure(tuple))).toMap
+  override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = memoizedAllOtherZetasItemsForGivenZ(z)
 
-  override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
-    //  zetaIndicesDoubles(z).map(tuple => (tuple, checkIfExists(myStructure.get(tuple)))).toMap
-    //zetaIndicesDoubles(z).map(tuple => (tuple, myStructure(tuple))).toMap
-
-    val maybeList = zetaIndicesDoubles.get(z)
-    val returnedMap = maybeList match {
-      case Some(listbuf) =>
-        listbuf.map(tuple => (tuple, myStructure(tuple))).toMap
-      case None =>
-        Map((0,0) -> new DVList())
-    }
-    returnedMap
+  val memoizedAllDoubleZetasItemsForGivenZ: Int => Map[(Int,Int),DVList] = Memo.immutableHashMapMemo {
+    num => {val maybeList = zetaIndicesDoubles.get(num)
+      val returnedMap = maybeList match {
+        case Some(listbuf) =>
+          listbuf.map(tuple => (tuple, myStructure(tuple))).toMap
+        case None =>
+          Map((0,0) -> new DVList())
+      }
+      returnedMap}
   }
 
+  override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
+    memoizedAllDoubleZetasItemsForGivenZ(z)
+  }
 
+  val memoizedZetasItemsForGivenZ: Int => Map[(Int,Int),DVList] = Memo.immutableHashMapMemo {
+    num => zetaIndices(num).map(tuple => (tuple, myStructure(tuple))).toMap
+  }
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second (both sides included)
     */
-  override def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = zetaIndices(z).map(tuple => (tuple, myStructure(tuple))).toMap
+  override def getZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = memoizedZetasItemsForGivenZ(z)
 
   override def sizeOfStructure():Int = myStructure.keys.size
 
