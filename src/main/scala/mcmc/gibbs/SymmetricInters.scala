@@ -150,16 +150,16 @@ class SymmetricInters extends AsymmetricBoth {
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath()))
 
-    val thetaTitles = (1 to info.betaLevels)
+    val thetaTitles = (1 to info.zetaLevels)
       .map { j => "-".concat(j.toString) }
       .map { entry =>
-        (1 to info.alphaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
+        (1 to info.zetaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    val indicsTitles = (1 to info.betaLevels)
+    val indicsTitles = (1 to info.zetaLevels)
       .map { j => "-".concat(j.toString) }
       .map { entry =>
-        (1 to info.alphaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
+        (1 to info.zetaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
     pw.append("mu ,tau, taua, taub, tauInt,")
