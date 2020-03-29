@@ -66,22 +66,11 @@ class SymmetricBoth extends SymmetricMain {
       val j = item.a
       val k = item.b
 
-      // toDo: Njkkj is the same as item.list.length from structureSorted so see maybe it is not necessary to have calcAlphaBetaLength
       // Number of the observations that have alpha==j and beta==k and alpha==k and beta==j
-      val Njkkj =
-      if (j == k) {
-        info.structure.calcAlphaBetaLength(j, k)
-      } else {
-        info.structure.calcAlphaBetaLength(j, k) + info.structure.calcAlphaBetaLength(k, j)
-      }
+      val Njkkj = item.list.length
 
       // Sum of the observations that have alpha==j and beta==k and alpha==k and beta==j
-      val SXjkkj =
-        if (j == k) {
-          info.structure.calcAlphaBetaSum(j, k)
-        } else {
-          info.structure.calcAlphaBetaSum(j, k) + info.structure.calcAlphaBetaSum(k, j)
-        }
+      val SXjkkj = item.list.sum
 
       val u = breeze.stats.distributions.Uniform(0, 1).draw()
 
