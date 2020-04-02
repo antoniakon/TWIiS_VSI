@@ -74,7 +74,8 @@ object MainRunner {
     object mySymmetricInters extends SymmetricInters
     object mySymmetricMain extends SymmetricMain
     object mySymmetricBoth extends SymmetricBoth
-    myAsymmetricBoth
+    object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
+    mySatAsymmetricBoth
   }
 }
 

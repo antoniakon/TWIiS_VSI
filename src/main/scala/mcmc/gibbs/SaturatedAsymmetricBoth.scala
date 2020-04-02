@@ -21,7 +21,7 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels)
     val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels)
     val initZetaCoefs = DenseVector.zeros[Double](info.zetaLevels)
-    val initThetas = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
+    val initThetas = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels) //Thetas represent the interaction coefficients gamma for this case
     val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
 
@@ -35,10 +35,10 @@ class SaturatedAsymmetricBoth extends VariableSelection {
   override def nextmutau(oldfullState: FullState, info: InitialInfo): FullState = {
     val prevtau = oldfullState.mt(1)
     val varMu = 1.0 / (info.tau0 + info.N * prevtau) //the variance for mu
-    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, info.alphaLevels, info.betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
+    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
     //Use the just updated mu to estimate tau
-    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, newmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, newmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
     oldfullState.copy(mt = DenseVector(newmu, newtau))
   }
 
@@ -46,28 +46,26 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     * Function for updating taus (taua, taub, tauInt)
     */
   override def nexttaus(oldfullState: FullState, info: InitialInfo): FullState = {
+    val njk = info.structure.sizeOfStructure() // Number of levels of interactions
 
-    //todo: check if acoef non set values create an issue
     var sumaj = 0.0
     oldfullState.acoefs.foreachValue(acoef => {
       sumaj += pow(acoef - info.alphaPriorMean, 2)
     })
+    sumaj -= (info.alphaLevels - info.alphaLevelsDist) * pow(0 - info.alphaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    //todo: check if bcoef non set values create an issue
     var sumbk = 0.0
     oldfullState.bcoefs.foreachValue(bcoef => {
       sumbk += pow(bcoef - info.betaPriorMean, 2)
     })
+    sumbk -= (info.betaLevels - info.betaLevelsDist) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    //todo: check if thcoef non set values create an issue
     var sumThetajk = 0.0
     oldfullState.thcoefs.foreachValue(thcoef => {
       sumThetajk += pow(thcoef - info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
     })
+    sumThetajk -= (info.alphaLevels * info.betaLevels - njk) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    val njk = info.structure.sizeOfStructure() // Number of levels of interactions
-
-    //TODO: maybe above needs to be val njk = info.structure.sizeOfStructure() // Number of levels of interactions
     val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
     val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 /(info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
@@ -91,7 +89,7 @@ class SaturatedAsymmetricBoth extends VariableSelection {
       val SXalphaj = info.structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
       val Nj = info.structure.calcAlphaLength(j) // the number of the observations that have alpha==j
       val SumBeta = sumBetaEffGivenAlpha(info.structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
-      val SinterAlpha = sumInterEffGivenAlpha(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given alpha
+      val SinterAlpha = sumInterEffGivenAlpha(info.structure, j, oldfullState.thcoefs) //the sum of the gamma effects given alpha
       val varPalpha = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
       val meanPalpha = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
       curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
@@ -110,7 +108,7 @@ class SaturatedAsymmetricBoth extends VariableSelection {
       val SXbetak = info.structure.calcBetaSum(k) // the sum of the observations that have beta==k
       val Nk = info.structure.calcBetaLength(k) // the number of the observations that have beta==k
       val SumAlpha = sumAlphaGivenBeta(info.structure, k, oldfullState.acoefs) //the sum of the alpha effects given beta
-      val SinterBeta = sumInterEffGivenBeta(info.structure, k, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given beta
+      val SinterBeta = sumInterEffGivenBeta(info.structure, k, oldfullState.thcoefs) //the sum of the gamma/interaction effects given beta
       val varPbeta = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Nk) //the variance for betak
       val meanPbeta = (info.betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
       curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
@@ -119,7 +117,7 @@ class SaturatedAsymmetricBoth extends VariableSelection {
   }
 
   /**
-    * Function for updating indicators, interactions and final interaction coefficients
+    * Function for updating interaction coefficients
     */
   override def nextIndicsInters(oldfullState: FullState, info: InitialInfo): FullState = {
     val curIndicsEstim = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
@@ -129,17 +127,9 @@ class SaturatedAsymmetricBoth extends VariableSelection {
       val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
       val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
 
-      val u = breeze.stats.distributions.Uniform(0, 1).draw()
+      val u = 1
 
-      //log-sum-exp trick
-      val thcoef = oldfullState.thcoefs(item.a, item.b)
-      val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
-      val logProb0 = log(1.0 - info.p) //The log of the probability I=0
-      val logProb1 = log(info.p) + logInitExp //The log of the probability I=1
-      val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
-      val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
-      val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
-      val newProb0 = scaledProb0 / (scaledProb0 + scaledProb1) //Normalised
+      val newProb0 = 0
       //val newProb1 = scaledProb1 / (scaledProb0 + scaledProb1) //Normalised
 
       if (newProb0 < u) {
@@ -183,10 +173,10 @@ class SaturatedAsymmetricBoth extends VariableSelection {
   /**
     * Calculate the sum of all the alpha and all the beta effects for all the observations.
     */
-  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double]): Double = {
     var totalsum = 0.0
     structure.foreach(item => {
-      totalsum += item.list.length * (alphaEff(item.a) + betaEff(item.b) + indics(item.a, item.b) * interEff(item.a, item.b))
+      totalsum += item.list.length * (alphaEff(item.a) + betaEff(item.b) + interEff(item.a, item.b))
     })
     totalsum
   }
@@ -194,10 +184,10 @@ class SaturatedAsymmetricBoth extends VariableSelection {
   /**
     * Add all the interaction effects for a given alpha.
     */
-  def sumInterEffGivenAlpha(structure: DVStructure, alphaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEffGivenAlpha(structure: DVStructure, alphaIndex: Int, interEff: DenseMatrix[Double]): Double = {
     var sum = 0.0
     structure.getAllItemsForGivenA(alphaIndex).foreach(item => {
-      sum += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
+      sum += item.list.length * interEff(item.a, item.b)
     })
     sum
   }
@@ -205,10 +195,10 @@ class SaturatedAsymmetricBoth extends VariableSelection {
   /**
     * Add all the interaction effects for a given beta.
     */
-  def sumInterEffGivenBeta(structure: DVStructure, betaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumInterEffGivenBeta(structure: DVStructure, betaIndex: Int, interEff: DenseMatrix[Double]): Double = {
     var sum = 0.0
     structure.getAllItemsForGivenB(betaIndex).foreach(item => {
-      sum += item.list.length * indics(item.a, item.b) * interEff(item.a, item.b)
+      sum += item.list.length * interEff(item.a, item.b)
     })
     sum
   }
@@ -216,24 +206,24 @@ class SaturatedAsymmetricBoth extends VariableSelection {
   /**
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
-  def YminusMuAndEffects(structure: DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def YminusMuAndEffects(structure: DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double]): Double = {
     var sum = 0.0
 
     structure.foreach(item => {
       val a = item.a
       val b = item.b
-      sum += item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) * indics(a, b), 2)).sum
+      sum += item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) , 2)).sum
     })
     sum
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricMarch/asymmetricBoth"
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
 
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterAsymmetricBoth.csv")
 
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime1m15x20AsymmetricBothNewWayTRYYYYY.txt")
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime1m15x20AsymmetricBothSaturated.txt")
 
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/asymmetricBothScalaResTRYYYYY.csv")
+  override def getOutputFilePath(): String = getFilesDirectory.concat("/Scala1mAsymBothSaturated15x20.csv")
 
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath))
@@ -244,20 +234,12 @@ class SaturatedAsymmetricBoth extends VariableSelection {
         (1 to info.alphaLevels).map { i => "theta".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    val indicsTitles = (1 to info.betaLevels)
-      .map { j => "-".concat(j.toString) }
-      .map { entry =>
-        (1 to info.alphaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
-      }.mkString(",")
-
     pw.append("mu ,tau, taua, taub, tauInt,")
       .append( (1 to info.alphaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
       .append(",")
       .append( (1 to info.betaLevels).map { i => "beta".concat(i.toString) }.mkString(",") )
       .append(",")
       .append(thetaTitles)
-      .append(",")
-      .append(indicsTitles)
       .append("\n")
 
     pw.close()
@@ -278,9 +260,7 @@ class SaturatedAsymmetricBoth extends VariableSelection {
         .append(",")
         .append( fullstate.bcoefs.toArray.map { beta => beta.toString }.mkString(",") )
         .append(",")
-        .append( fullstate.finalCoefs.toArray.map { theta => theta.toString }.mkString(",") )
-        .append(",")
-        .append( fullstate.indics.toArray.map { ind => ind.toString }.mkString(",") )
+        .append( fullstate.thcoefs.toArray.map { theta => theta.toString }.mkString(",") )
         .append("\n")
     }
     pw.close()
