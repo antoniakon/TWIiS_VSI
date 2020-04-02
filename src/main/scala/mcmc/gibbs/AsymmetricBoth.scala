@@ -37,7 +37,7 @@ class AsymmetricBoth extends VariableSelection {
   override def nextmutau(oldfullState: FullState, info: InitialInfo): FullState = {
     val prevtau = oldfullState.mt(1)
     val varMu = 1.0 / (info.tau0 + info.N * prevtau) //the variance for mu
-    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, info.alphaLevels, info.betaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
+    val meanMu = (info.mu0 * info.tau0 + prevtau * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
     //Use the just updated mu to estimate tau
     val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, newmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
@@ -48,28 +48,26 @@ class AsymmetricBoth extends VariableSelection {
     * Function for updating taus (taua, taub, tauInt)
     */
   override def nexttaus(oldfullState: FullState, info: InitialInfo): FullState = {
+    val njk = info.structure.sizeOfStructure() // Number of levels of interactions
 
-    //todo: check if acoef non set values create an issue
     var sumaj = 0.0
     oldfullState.acoefs.foreachValue(acoef => {
       sumaj += pow(acoef - info.alphaPriorMean, 2)
     })
+    sumaj -= (info.alphaLevels - info.alphaLevelsDist) * pow(0 - info.alphaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    //todo: check if bcoef non set values create an issue
     var sumbk = 0.0
     oldfullState.bcoefs.foreachValue(bcoef => {
       sumbk += pow(bcoef - info.betaPriorMean, 2)
     })
+    sumbk -= (info.betaLevels - info.betaLevelsDist) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    //todo: check if thcoef non set values create an issue
     var sumThetajk = 0.0
     oldfullState.thcoefs.foreachValue(thcoef => {
       sumThetajk += pow(thcoef - info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
     })
+    sumThetajk -= (info.alphaLevels*info.betaLevels - njk) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    val njk = info.structure.sizeOfStructure() // Number of levels of interactions
-    
-    //TODO: maybe above needs to be val njk = info.structure.sizeOfStructure() // Number of levels of interactions
     val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
     val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 /(info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
@@ -185,7 +183,7 @@ class AsymmetricBoth extends VariableSelection {
   /**
     * Calculate the sum of all the alpha and all the beta effects for all the observations.
     */
-  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], nj: Int, nk: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
+  def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
     var totalsum = 0.0
     structure.foreach(item => {
       totalsum += item.list.length * (alphaEff(item.a) + betaEff(item.b) + indics(item.a, item.b) * interEff(item.a, item.b))
