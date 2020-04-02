@@ -2,7 +2,7 @@ package mcmc.gibbs
 
 import java.io.File
 import breeze.linalg.{DenseVector, csvread, max}
-import structure.{DVStructure, DVStructureIndexedMap}
+import structure.{DVStructure, DVStructureIndexedMap, DVStructureIndexedMapMemo}
 import scala.io.StdIn.readLine
 
 object MainRunner {
@@ -20,7 +20,7 @@ object MainRunner {
     val alpha = data(::, 1).map(_.toInt).map(x => x - 1)
     val beta = data(::, 2).map(_.toInt).map(x => x - 1)
     //    val structure : DVStructure = new DVStructureArrays(y, alpha, beta)
-    val structure : DVStructure = new DVStructureIndexedMap(y, alpha, beta)
+    val structure : DVStructure = new DVStructureIndexedMapMemo(y, alpha, beta)
     val alphaLevels = alpha.toArray.distinct.max+1
     val betaLevels = beta.toArray.distinct.max+1
 
