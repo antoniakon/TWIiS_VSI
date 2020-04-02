@@ -6,8 +6,8 @@ import scalaz.Memo
 
 class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
-  val alphaLevels = alpha.toArray.distinct.length
-  val betaLevels = beta.toArray.distinct.length
+  val alphaLevels = alpha.toArray.distinct.max+1
+  val betaLevels = beta.toArray.distinct.max+1
   val zetaLevels = max(alphaLevels, betaLevels)
 
   private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
