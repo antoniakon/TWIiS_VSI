@@ -12,7 +12,7 @@ import structure.DVStructure
   * Asymmetric main effects: as and bs come from a different distribution
   * Asymmetric Interactions: gamma_jk is different from gamma_kj
   **/
-class SaturatedAsymmetricBoth extends VariableSelection {
+class HorseshoeAsymmetricBoth extends VariableSelection {
 
   override def variableSelection(info: InitialInfo) = {
     // Initialise case class objects
