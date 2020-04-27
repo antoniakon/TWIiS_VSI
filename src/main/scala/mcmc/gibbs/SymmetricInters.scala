@@ -33,26 +33,26 @@ class SymmetricInters extends AsymmetricBoth {
     * Function for updating taus (taua, taub, tauInt)
     */
   override def nexttaus(oldfullState: FullState, info: InitialInfo): FullState = {
+    val njk = info.noOfInters // Number of levels of interactions
 
-    //todo: check if acoef non set values create an issue
     var sumaj = 0.0
     oldfullState.acoefs.foreachValue(acoef => {
       sumaj += pow(acoef - info.alphaPriorMean, 2)
     })
+    sumaj -= (info.alphaLevels - info.alphaLevelsDist) * pow(0 - info.alphaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    //todo: check if bcoef non set values create an issue
     var sumbk = 0.0
     oldfullState.bcoefs.foreachValue(bcoef => {
       sumbk += pow(bcoef - info.betaPriorMean, 2)
     })
+    sumbk -= (info.betaLevels - info.betaLevelsDist) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
-    //todo: check if thcoef non set values create an issue
     var sumThetajk = 0.0
-    upperTriangular(oldfullState.thcoefs).foreachValue(thcoef => {
+    upperTriangular(oldfullState.thcoefs).foreachValue(thcoef => { //upperTriangular includes the main diagonal
       sumThetajk += pow(thcoef - info.thetaPriorMean, 2) // Sum used in sampling from Gamma distribution for the precision of theta/interacions
     })
-    sumThetajk += (info.noOfInters - info.sizeOfDouble) * pow(-info.thetaPriorMean, 2)
-    val njk = info.noOfInters // Number of levels of interactions
+    sumThetajk -= (info.noOftriangular - njk) * pow(-info.thetaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
+
     val newtauAlpha = breeze.stats.distributions.Gamma(info.aPrior + info.alphaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumaj)).draw() //sample the precision of alpha from gamma
     val newtauBeta = breeze.stats.distributions.Gamma(info.aPrior + info.betaLevelsDist / 2.0, 1.0 / (info.bPrior + 0.5 * sumbk)).draw() // sample the precision of beta from gamma
     val newtauTheta = breeze.stats.distributions.Gamma(info.aPrior + njk / 2.0, 1.0 / (info.bPrior + 0.5 * sumThetajk)).draw() // sample the precision of the interactions gamma from gamma Distribition
