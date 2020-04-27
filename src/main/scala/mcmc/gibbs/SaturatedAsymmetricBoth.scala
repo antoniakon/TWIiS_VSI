@@ -7,7 +7,7 @@ import structure.DVStructure
 
 /**
   * Saturated model with Gibbs sampler. Implementation for asymmetric main effects and asymmetric interactions.
-  * Model: X_ijk | mu,a_j,b_k ,gamma_jk,tau  ~ N(mu + a_j + b_k + I_jk * gamma_jk , τ^−1 )
+  * Model: X_ijk | mu,a_j,b_k ,gamma_jk,tau  ~ N(mu + a_j + b_k +  gamma_jk , τ^−1 )
   * Using gamma priors for taua, taub, tauTheta and Normal for the main effects a_j and b_k and the effect size theta_jk
   * Asymmetric main effects: as and bs come from a different distribution
   * Asymmetric Interactions: gamma_jk is different from gamma_kj
