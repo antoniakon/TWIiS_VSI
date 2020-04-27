@@ -59,8 +59,9 @@ object MainRunner {
     val b = 0.0001
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
+    val burnIn = 10
 
-    val initialInfo = InitialInfo(noOfIters, thin, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,
+    val initialInfo = InitialInfo(noOfIters, thin, burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
       a, b, aPrior, bPrior, p)
 

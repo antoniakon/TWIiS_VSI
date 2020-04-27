@@ -24,12 +24,16 @@ abstract class VariableSelection {
 
     printTitlesToFile(info)
 
+    //Burn-in period
+    val burnInStates = calculateNewState(info.burnIn, info, fstate, FullStateList(Vector()))
+
     val writeBufferSize = 1000
     val wantedIterations = writeBufferSize * info.thin
 
     var remainingIterations = n
 
-    var lastState = fstate
+    //var lastState = fstate //Before burn-in period addition
+    var lastState = burnInStates.fstateL.last
     while (remainingIterations > 0) {
 
       val iterations = if (remainingIterations >= wantedIterations) {
@@ -49,56 +53,13 @@ abstract class VariableSelection {
 
   }
 
-//  protected final def calculateAllStatesWithStream(n:Int, info: InitialInfo, fstate:FullState) = {
-//    // With stream values are stored in reverse, head: init
-//    def streamStates(info: InitialInfo, fState: FullState): Stream[(InitialInfo, FullState)] =
-//      Stream.iterate((info, fstate))( { case(info, fstate) => (info, calculateNextState(info, fstate))})
-//
-//    printTitlesToFile(info)
-//
-//    val writeBufferSize = 1000
-//    val wantedIterations = writeBufferSize * info.thin
-//
-//    var remainingIterations = n
-//
-//    var lastState = fstate
-//    while (remainingIterations > 0) {
-//
-//      val iterations = if (remainingIterations >= wantedIterations) {
-//        wantedIterations
-//      } else {
-//        remainingIterations
-//      }
-//      remainingIterations -= wantedIterations
-//
-//
-//      val toWrite = streamStates(info, lastState)
-//        //.drop(1000) //do not evaluate first 1000 iterations
-//        .take(iterations)
-//        .map{ case(info, fstate) => fstate }
-//        .zipWithIndex
-//        .filter { case (_, i) => i % info.thin == 0}
-//        .map(_._1)
-//        .toList
-//
-//      lastState = toWrite.head
-//      //now write this buffer
-//      executor.execute { () => printToFile(FullStateList(toWrite)) }
-//
-//    }
-//    executor.shutdown()
-//
-//
-//
-//
-//  }
-
   protected def printTitlesToFile(initialInfo: InitialInfo): Unit
 
   protected def printToFile(fullStateList: FullStateList): Unit
 
   @annotation.tailrec
   private final def calculateNewState(n:Int, info: InitialInfo, fstate:FullState, fstateList:FullStateList): FullStateList = {
+    //println(fstate.acoefs)
     if (n==0) fstateList
     else{
       println(n)
