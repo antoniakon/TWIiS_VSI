@@ -66,6 +66,8 @@ trait DVStructure {
 
   def getAllItemsMappedByB() : Map[Int, List[DVItem]]
 
+  def getAllZetas() : List[Int]
+
   def sizeOfStructure(): Int
 
   def sizeOfDouble(): Int

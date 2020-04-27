@@ -233,4 +233,6 @@ class DVStructureJavaMap(y: DenseVector[Double], alpha: DenseVector[Int], beta: 
   override def calcDoubleZetaLength(zj: Int): Double = ???
 
   override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = ???
+
+  override def getAllZetas(): List[Int] = ???
 }

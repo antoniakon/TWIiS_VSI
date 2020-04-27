@@ -56,8 +56,10 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
       zetaIndicesWithoutDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1!=a._2))}
       zetaIndicesDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1==a._2))}.filter(v1 => v1._2.nonEmpty) //Includes only the double z without the zs that do not have doubles
       myStructure((curAlpha, curBeta)).addItem(y(i))
-    }
+
+     }
   }
+
 
   /**
     * Calculates the sum of the response y for a given alpha
@@ -248,4 +250,6 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
   override def sizeOfStructure():Int = myStructure.keys.size
 
   override def sizeOfDouble():Int = myStructure.keys.filter(k => (k._1==k._2)).size
+
+  override def getAllZetas(): List[Int] = ???
 }

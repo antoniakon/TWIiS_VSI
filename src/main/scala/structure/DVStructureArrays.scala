@@ -156,4 +156,5 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
 
   override def getAllItemsMappedByB() : Map[Int, List[DVItem]] = (0 until nk).map(x => (x, getAllItemsForGivenB(x))).toMap
 
+  override def getAllZetas(): List[Int] = ???
 }

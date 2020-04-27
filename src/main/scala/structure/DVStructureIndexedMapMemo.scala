@@ -286,6 +286,9 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   private val memoizedZetasItemsForGivenZ: Int => Map[(Int,Int),DVList] = Memo.immutableHashMapMemo {
     num => zetaIndices(num).map(tuple => (tuple, myStructure(tuple))).toMap
   }
+
+  override def getAllZetas(): List[Int] =
+    zetaIndices.keys.toList
   /**
     * Returns a Map[(Int,Int),DVList] with all the cases where zeta is either on the first side or the second (both sides included)
     */
