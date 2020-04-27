@@ -79,7 +79,7 @@ class SymmetricMain extends VariableSelection {
     val curZetaEstim = DenseVector.zeros[Double](info.zetaLevels)
     curZetaEstim:= oldfullState.zcoefs
 
-    (0 until info.zetaLevels).foreach( item => { //For each existing zeta
+    info.structure.getAllZetas().foreach( item => { //For each existing zeta
       val j = item
       val SXZetaj = info.structure.calcZetaSum(j) // the sum of the observations that have zeta == j on either side, not both
       val Nj = info.structure.calcZetaLength(j) // the number of the observations that have zeta == j on either side, not both
@@ -193,13 +193,13 @@ class SymmetricMain extends VariableSelection {
     sum
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricMarch/symmetricMain"
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
 
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricMain.csv")
 
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricMain.txt")
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime10mSymmetricMainTRYYY.txt")
 
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/symmetricMainScalaRes.csv")
+  override def getOutputFilePath(): String = getFilesDirectory.concat("/symmetricMainScalaResTRYYY.csv")
 
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath()))
