@@ -137,9 +137,7 @@ class SymmetricMain extends VariableSelection {
         curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
       }
     })
-
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
-
   }
 
   /**
@@ -152,20 +150,15 @@ class SymmetricMain extends VariableSelection {
       if (k1 == zetaIndex) k2
       else k1
     }
+    //Alternative implementations, more functional but less efficient
+    //structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))).sum
+    //structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foldLeft(0.0)( (sum, elem) => sum + (elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))) )
 
-    def old():Double = {
-      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))).sum
-    }
-
-    def newImp():Double= {
-      var totalsum = 0.0
-      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
-        totalsum += item._2.length * zetaEff(notZeta(item._1._1, item._1._2))
-      })
-      totalsum
-    }
-    newImp()
-    old()
+    var totalsum = 0.0
+    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
+      totalsum += item._2.length * zetaEff(notZeta(item._1._1, item._1._2))
+    })
+    totalsum
   }
 
   /**
@@ -183,39 +176,22 @@ class SymmetricMain extends VariableSelection {
     * Add all the interaction effects for a given zeta. Adds all the interactions for which zeta is on either side. Includes the doubles bcs getZetasItemsForGivenZ uses a structure that includes everything
     */
   def sumInterEffGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    //Alternative more functional implementations, but not as efficient. foldLeft faster than map (50x60, 100K, 20.3sec vs 46 sec). var total sum the fastest (16.4 sec)
+    //Alternative implementations more functional, but less efficient. foldLeft faster than map (50x60, 100K, 20.3sec vs 46 sec). var total sum the fastest (16.4 sec)
+    //structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).sum
+    //structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foldLeft(0.0)( (sum, elem) => sum + (elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)) )
 
-    def newImp():Double= {
-      var totalsum = 0.0
-      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
-        totalsum += item._2.length * indics(item._1._1, item._1._2) * interEff(item._1._1, item._1._2)
-      })
-      //println(totalsum)
-      totalsum
-    }
-    newImp()
-
-    def newImp2(): Double={
-     structure.getAllOtherZetasItemsForGivenZ(zetaIndex)
-        .foldLeft(0.0)( (sum, elem) => sum + (elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)) )
-      //println(try1)
-
-    }
-
-    newImp2()
-
-    def old(): Double={
-      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).sum
-    }
-
-    old()
+    var totalsum = 0.0
+    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
+      totalsum += item._2.length * indics(item._1._1, item._1._2) * interEff(item._1._1, item._1._2)
+    })
+    totalsum
   }
 
   /**
     * Add all the interaction effects for a given zeta which is double (zeta,zeta)
     */
   def sumInterEffDoublesGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).sum
+    structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).foldLeft(0.0)( (sum, elem) => sum + (elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)) )
   }
 
   /**
