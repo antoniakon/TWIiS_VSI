@@ -40,7 +40,7 @@ object MainRunner {
       }
     }
 
-    val structureSorted : DVStructure = new DVStructureIndexedMap(y, alphaSorted, betaSorted) // Sorted structure to be used for the indices to run through the data but not repeat e.g. only (1,3) and not (3,1)
+    val structureSorted : DVStructure = new DVStructureIndexedMapMemo(y, alphaSorted, betaSorted) // Sorted structure to be used for the indices to run through the data but not repeat e.g. only (1,3) and not (3,1)
     val noOfInters = structureSorted.sizeOfStructure()
     val zetaLevels = zetaDistinct.max + 1
     val zetaLevelsDist = zetaDistinct.length
