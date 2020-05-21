@@ -149,10 +149,23 @@ class SymmetricMain extends VariableSelection {
   def sumEffectsOfOtherZetas(structure: DVStructure, zetaIndex: Int, zetaEff: DenseVector[Double]): Double = {
     //returns the element which is not zetaIndex. It doesn't take into account the cases where both sides are zetaIndex because getAllOtherZetasItemsForGivenZ works on a structure that does not involve the (j,j) cases
     def notZeta(k1: Int, k2: Int): Int={
-      if(k1!=zetaIndex) k1
-      else k2
+      if (k1 == zetaIndex) k2
+      else k1
     }
-    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))).reduce(_+_)
+
+    def old():Double = {
+      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))).sum
+    }
+
+    def newImp():Double= {
+      var totalsum = 0.0
+      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
+        totalsum += item._2.length * zetaEff(notZeta(item._1._1, item._1._2))
+      })
+      totalsum
+    }
+    newImp()
+    old()
   }
 
   /**
@@ -170,14 +183,39 @@ class SymmetricMain extends VariableSelection {
     * Add all the interaction effects for a given zeta. Adds all the interactions for which zeta is on either side. Includes the doubles bcs getZetasItemsForGivenZ uses a structure that includes everything
     */
   def sumInterEffGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
+    //Alternative more functional implementations, but not as efficient. foldLeft faster than map (50x60, 100K, 20.3sec vs 46 sec). var total sum the fastest (16.4 sec)
+
+    def newImp():Double= {
+      var totalsum = 0.0
+      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
+        totalsum += item._2.length * indics(item._1._1, item._1._2) * interEff(item._1._1, item._1._2)
+      })
+      //println(totalsum)
+      totalsum
+    }
+    newImp()
+
+    def newImp2(): Double={
+     structure.getAllOtherZetasItemsForGivenZ(zetaIndex)
+        .foldLeft(0.0)( (sum, elem) => sum + (elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)) )
+      //println(try1)
+
+    }
+
+    newImp2()
+
+    def old(): Double={
+      structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).sum
+    }
+
+    old()
   }
 
   /**
     * Add all the interaction effects for a given zeta which is double (zeta,zeta)
     */
   def sumInterEffDoublesGivenZeta(structure: DVStructure, zetaIndex: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).reduce(_+_)
+    structure.getAllDoubleZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * indics(elem._1._1, elem._1._2) * interEff(elem._1._1, elem._1._2)).sum
   }
 
   /**
