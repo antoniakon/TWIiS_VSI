@@ -250,5 +250,5 @@ class DVStructureIndexedMap(y: DenseVector[Double], alpha: DenseVector[Int], bet
 
   override def sizeOfDouble():Int = myStructure.keys.filter(k => (k._1==k._2)).size
 
-  override def getAllZetas(): List[Int] = ???
+  override def getAllZetas(): List[Int] = zetaIndices.keys.toList
 }
