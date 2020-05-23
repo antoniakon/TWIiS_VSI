@@ -222,7 +222,7 @@ class AsymmetricBoth extends VariableSelection {
     structure.foreach(item => {
       val a = item.a
       val b = item.b
-      sum += item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) * indics(a, b), 2)).sum
+      sum += item.list.foldLeft(0.0)((sum, x) => sum + scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) * indics(a, b), 2))
     })
     sum
   }

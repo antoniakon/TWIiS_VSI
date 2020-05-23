@@ -198,14 +198,13 @@ class SymmetricMain extends VariableSelection {
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
   def YminusMuAndEffects(structure:DVStructure, mu: Double, zetaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    var sum = 0.0
-
-    structure.foreach( item => {
-      val a = item.a
-      val b = item.b
-      sum += item.list.map(x => scala.math.pow(x - mu - zetaEff(a) - zetaEff(b) - interEff(a, b) * indics(a, b), 2)).sum
-    })
-    sum
+      var sum = 0.0
+      structure.foreach( item => {
+        val a = item.a
+        val b = item.b
+        sum += item.list.foldLeft(0.0)((sum, x) => sum + scala.math.pow(x - mu - zetaEff(a) - zetaEff(b) - interEff(a, b) * indics(a, b), 2))
+      })
+      sum
   }
 
   override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
