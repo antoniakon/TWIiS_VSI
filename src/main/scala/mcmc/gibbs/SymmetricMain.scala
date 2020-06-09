@@ -4,6 +4,7 @@ import java.io.{File, FileWriter, PrintWriter}
 import breeze.linalg.{DenseMatrix, DenseVector, max}
 import breeze.numerics.{exp, log, pow, sqrt}
 import structure.DVStructure
+import scala.math.Pi
 
 /**
   * Variable selection with Gibbs sampler. Implementation for symmetric main effects and asymmetric interactions.
@@ -37,9 +38,11 @@ class SymmetricMain extends VariableSelection {
     val varMu = 1.0 / (info.tau0 + info.N * oldfullState.mt(1)) //the variance for mu
     val meanMu = (info.mu0 * info.tau0 + oldfullState.mt(1) * (info.SumObs - sumAllMainInterEff(info.structure, oldfullState.zcoefs, info.zetaLevels, oldfullState.thcoefs, oldfullState.indics))) * varMu
     val newmu = breeze.stats.distributions.Gaussian(meanMu, sqrt(varMu)).draw()
+    val obsMinusFitted = YminusMuAndEffects(info.structure, newmu, oldfullState.zcoefs, oldfullState.thcoefs, oldfullState.indics)
     //Use the just updated mu to estimate tau
-    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * YminusMuAndEffects(info.structure, newmu, oldfullState.zcoefs, oldfullState.thcoefs, oldfullState.indics))).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
-    oldfullState.copy(mt=DenseVector(newmu,newtau))
+    val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * obsMinusFitted)).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
+    val newLogLik = 0.5 * info.N * (log(newtau) - log(2 * Pi)) - 0.5 * newtau * obsMinusFitted // Caclulate the logLikelihood
+    oldfullState.copy(mt=DenseVector(newmu,newtau), logLik = newLogLik)
   }
 
   /**
@@ -231,7 +234,7 @@ class SymmetricMain extends VariableSelection {
         (1 to info.zetaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    pw.append("mu ,tau, tauz, tauInt,")
+    pw.append("mu ,tau, tauz, tauInt, logLik,")
       .append( (1 to info.zetaLevels).map { i => "zeta".concat(i.toString) }.mkString(",") )
       .append(",")
       .append(thetaTitles)
@@ -252,6 +255,8 @@ class SymmetricMain extends VariableSelection {
         .append(fullstate.mt(1).toString)
         .append(",")
         .append( fullstate.tauabth.toArray.map { tau => tau.toString }.mkString(",") )
+        .append(",")
+        .append(fullstate.logLik.toString)
         .append(",")
         .append( fullstate.zcoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
         .append(",")
