@@ -24,8 +24,9 @@ class SymmetricBoth extends SymmetricMain {
     val initThetas = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
     val initIndics = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
     val initFinals = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
+    val loglik = 0.0
 
-    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus)
+    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus, loglik)
     calculateAllStates(info.noOfIter, info, fullStateInit)
   }
 
