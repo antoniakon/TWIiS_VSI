@@ -72,10 +72,10 @@ abstract class VariableSelection {
   }
 
   private def calculateNextState(info: InitialInfo, fstate: FullState): FullState = {
-    val latestmt = nextmutau(fstate, info)
-    val latesttaus = nexttaus(latestmt, info)
+    val latesttaus = nexttaus(fstate, info)
     val latestcoefs = nextCoefs(latesttaus, info)
-    val latestFullyUpdatedState = nextIndicsInters(latestcoefs, info)
+    val latestIndicsInters = nextIndicsInters(latestcoefs, info)
+    val latestFullyUpdatedState = nextmutau(latestIndicsInters, info)
     latestFullyUpdatedState
   }
 
