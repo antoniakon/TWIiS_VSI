@@ -6,6 +6,9 @@ import scalaz.Memo
 
 class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
+  private val EMPTY_DVLIST = new DVList()
+  private val EMPTY_LISTBUFF = new ListBuffer[(Int, Int)]()
+
   val alphaLevels = alpha.toArray.distinct.max+1
   val betaLevels = beta.toArray.distinct.max+1
   val zetaLevels = max(alphaLevels, betaLevels)
@@ -103,14 +106,9 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
 
   private val memoizedcalcAlphaBetaLength:  Tuple2[Int, Int] => Double = Memo.immutableHashMapMemo {
     // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
-    num => {val lengthMaybe = myStructure.get(num._1,num._2)
-      val length = lengthMaybe match {
-        case Some(dvlist) =>
-          dvlist.length
-        case None =>
-          0
-      }
-      length}
+    num => {
+      myStructure.getOrElse((num._1, num._2), EMPTY_DVLIST).length
+    }
   }
 
   /**
@@ -122,14 +120,9 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
 
   private val memoizedcalcAlphaBetaSum:  Tuple2[Int, Int] => Double = Memo.immutableHashMapMemo {
     // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
-    num => {val lengthMaybe = myStructure.get(num._1,num._2)
-      val sum = lengthMaybe match {
-        case Some(dvlist) =>
-          dvlist.sum
-        case None =>
-          0
-      }
-      sum}
+    num => {
+      myStructure.getOrElse((num._1, num._2), EMPTY_DVLIST).sum
+    }
   }
 
   /**
@@ -151,14 +144,11 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   }
 
   private val memoizedgetAllItemsForGivenA: Int => List[DVItem] = Memo.immutableHashMapMemo {
-    num => {val ifaexists = alphaIndices.get(num)
-      val res = ifaexists match {
-        case Some(tups) =>
-          tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
-            .toList
-        case None => List[DVItem]()
-      }
-      res}
+    num => {
+      alphaIndices.getOrElse(num, EMPTY_LISTBUFF)
+        .map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
+        .toList
+    }
   }
   /**
     * For a given a it returns a list of items  DVItem(a: Int,b: Int,list: DVList)
@@ -168,14 +158,11 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   }
 
   private val memoizedgetAllItemsForGivenB: Int => List[DVItem] = Memo.immutableHashMapMemo {
-    num => { val ifbexists = betaIndices.get(num)
-      val res = ifbexists match {
-        case Some(tups) =>
-          tups.map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
-            .toList
-        case None => List[DVItem]()
-      }
-      res}
+    num => {
+      betaIndices.getOrElse(num, EMPTY_LISTBUFF)
+        .map(item => new DVItem(item._1, item._2, myStructure(item._1, item._2)))
+        .toList
+    }
   }
 
   /**
@@ -224,14 +211,11 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   }
 
   private val memoizedCalcDoubleZetaSum: Int => Double = Memo.immutableHashMapMemo {
-    num => { val lengthMaybe = zetaIndicesDoubles.get(num)
-      val sum = lengthMaybe match {
-        case Some(listbuf) =>
-          listbuf.map(tuple => myStructure(tuple).sum).sum
-        case None =>
-          0
-      }
-      sum}
+    num => {
+      zetaIndicesDoubles.getOrElse(num, EMPTY_LISTBUFF)
+        .map(tuple => myStructure(tuple).sum)
+        .sum
+    }
   }
 
   /**
@@ -242,14 +226,11 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   }
 
   private val memoizedCalcDoubleZetaLength: Int => Double = Memo.immutableHashMapMemo {
-    num => { val lengthMaybe = zetaIndicesDoubles.get(num)
-      val length = lengthMaybe match {
-        case Some(listbuf) =>
-          listbuf.map(tuple => myStructure(tuple).length).sum
-        case None =>
-          0
-      }
-      length}
+    num => {
+      zetaIndicesDoubles.getOrElse(num, EMPTY_LISTBUFF)
+        .map(tuple => myStructure(tuple).length)
+        .sum
+    }
   }
 
   /**
@@ -268,14 +249,11 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   override def getAllOtherZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = memoizedAllOtherZetasItemsForGivenZ(z)
 
   private val memoizedAllDoubleZetasItemsForGivenZ: Int => Map[(Int,Int),DVList] = Memo.immutableHashMapMemo {
-    num => {val maybeList = zetaIndicesDoubles.get(num)
-      val returnedMap = maybeList match {
-        case Some(listbuf) =>
-          listbuf.map(tuple => (tuple, myStructure(tuple))).toMap
-        case None =>
-          Map((0,0) -> new DVList())
-      }
-      returnedMap}
+    num => {
+      zetaIndicesDoubles.getOrElse(num, EMPTY_LISTBUFF)
+        .map(tuple => (tuple, myStructure(tuple)))
+        .toMap
+    }
   }
 
   override def getAllDoubleZetasItemsForGivenZ(z: Int): Map[(Int,Int),DVList] = {
