@@ -152,7 +152,7 @@ class SymmetricInters extends AsymmetricBoth {
         (1 to info.zetaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    pw.append("mu ,tau, taua, taub, tauInt,")
+    pw.append("mu ,tau, taua, taub, tauInt, logLik,")
       .append( (1 to info.alphaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
       .append(",")
       .append( (1 to info.betaLevels).map { i => "beta".concat(i.toString) }.mkString(",") )
@@ -175,6 +175,8 @@ class SymmetricInters extends AsymmetricBoth {
         .append(fullstate.mt(1).toString)
         .append(",")
         .append( fullstate.tauabth.toArray.map { tau => tau.toString }.mkString(",") )
+        .append(",")
+        .append(fullstate.logLik.toString)
         .append(",")
         .append( fullstate.acoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
         .append(",")

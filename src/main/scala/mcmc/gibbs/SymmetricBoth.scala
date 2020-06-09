@@ -145,7 +145,7 @@ class SymmetricBoth extends SymmetricMain {
         (1 to info.zetaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    pw.append("mu ,tau, tauz, tauInt,")
+    pw.append("mu ,tau, tauz, tauInt, logLik,")
       .append( (1 to info.zetaLevels).map { i => "zeta".concat(i.toString) }.mkString(",") )
       .append(",")
       .append(thetaTitles)
@@ -166,6 +166,8 @@ class SymmetricBoth extends SymmetricMain {
         .append(fullstate.mt(1).toString)
         .append(",")
         .append( fullstate.tauabth.toArray.map { tau => tau.toString }.mkString(",") )
+        .append(",")
+        .append(fullstate.logLik.toString)
         .append(",")
         .append( fullstate.zcoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
         .append(",")
