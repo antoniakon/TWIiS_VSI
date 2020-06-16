@@ -124,19 +124,6 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   override def calcAlphaBetaLength(j: Int, k: Int): Double = {
     //memoizedcalcAlphaBetaLength(j,k)
     alphaBetaLengthMat(j)(k)
-
-  private val memoizedcalcAlphaBetaSum:  Tuple2[Int, Int] => Double = Memo.immutableHashMapMemo {
-    // Uses Option because if the key (j,k) is not found it throws a java.util.NoSuchElementException
-    num => {
-      myStructure.getOrElse((num._1, num._2), EMPTY_DVLIST).sum
-    }
-  }
-
-  /**
-    * Calculates the sum of the responses y for a given alpha and beta
-    */
-  override def calcAlphaBetaSum(j: Int, k: Int): Double = {
-    memoizedcalcAlphaBetaSum(j,k)
   }
 
   /**

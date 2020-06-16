@@ -140,8 +140,6 @@ class DVStructureArrays(y: DenseVector[Double], alpha: DenseVector[Int], beta: D
 
   override def calcAlphaBetaLength(j: Int, k: Int): Double = ???
 
-  override def calcAlphaBetaSum(j: Int, k: Int): Double = ???
-
   override def sizeOfStructure():Int = ???
 
   override def sizeOfDouble():Int = ???

@@ -18,10 +18,6 @@ trait DVStructure {
   def calcBetaSum(k: Int): Double
 
   /**
-    * Calculates the sum of the responses y for a given alpha and beta
-    */
-  def calcAlphaBetaSum(j: Int, k: Int): Double
-  /**
     * Calculates the number of the responses y for a given alpha
     */
   def calcAlphaLength(j: Int): Double
