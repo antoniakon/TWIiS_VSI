@@ -150,17 +150,15 @@ class SymmetricMain extends VariableSelection {
     */
   def sumEffectsOfOtherZetas(structure: DVStructure, zetaIndex: Int, zetaEff: DenseVector[Double]): Double = {
     //returns the element which is not zetaIndex. It doesn't take into account the cases where both sides are zetaIndex because getAllOtherZetasItemsForGivenZ works on a structure that does not involve the (j,j) cases
-    def notZeta(k1: Int, k2: Int): Int={
-      if (k1 == zetaIndex) k2
-      else k1
-    }
+
     //Alternative implementations, more functional but less efficient
     //structure.getAllOtherZetasItemsForGivenZ(zetaIndex).map(elem => elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))).sum
     //structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foldLeft(0.0)( (sum, elem) => sum + (elem._2.length * zetaEff(notZeta(elem._1._1, elem._1._2))) )
 
     var totalsum = 0.0
     structure.getAllOtherZetasItemsForGivenZ(zetaIndex).foreach(item => {
-      totalsum += item._2.length * zetaEff(notZeta(item._1._1, item._1._2))
+      val otherElement = if (item._1._1 == zetaIndex) item._1._2 else item._1._1
+      totalsum += item._2.length * zetaEff(otherElement)
     })
     totalsum
   }
