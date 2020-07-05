@@ -13,7 +13,7 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   val betaLevels = beta.toArray.distinct.max+1
   val zetaLevels = max(alphaLevels, betaLevels)
 
-  private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
+  private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]().par
   private var alphaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var betaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
