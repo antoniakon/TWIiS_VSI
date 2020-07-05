@@ -1,8 +1,10 @@
 package structure
 
 import breeze.linalg.{DenseVector, max}
-import scala.collection.mutable.ListBuffer
 import scalaz.Memo
+
+import scala.collection.mutable.ListBuffer
+import scala.collection.parallel.immutable.ParMap
 
 class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
 
@@ -13,7 +15,7 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   val betaLevels = beta.toArray.distinct.max+1
   val zetaLevels = max(alphaLevels, betaLevels)
 
-  private val myStructure = scala.collection.mutable.Map[(Int, Int), DVList]().par
+  private val myStructure : ParMap[(Int, Int), DVList] = initMyStucture()
   private var alphaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var betaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
@@ -22,6 +24,24 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   private var allItemsMappedbyA = Map[Int, List[DVItem]]()
   private var allItemsMappedbyB = Map[Int, List[DVItem]]()
   private val alphaBetaLengthMat = Array.ofDim[Double](zetaLevels, zetaLevels).map(x=> x.map(y => 0.0))
+
+  private def initMyStucture() : ParMap[(Int, Int), DVList] = {
+    val tempStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
+
+    for (i <- 0 until y.length) {
+      val curAlpha = alpha(i)
+      val curBeta = beta(i)
+
+      tempStructure.get(curAlpha, curBeta) match {
+        case None => tempStructure += ((curAlpha, curBeta) -> new DVList())
+        case Some(value) => // do nothing
+      }
+
+      tempStructure((curAlpha, curBeta)).addItem(y(i))
+    }
+
+    tempStructure.toMap.par
+  }
 
   init()
 
@@ -50,12 +70,9 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
         case Some(value) => value += ( (curAlpha, curBeta) ) //could already exist but later use distinct so as not to have duplicates
       }
 
-      myStructure.get(curAlpha, curBeta) match {
-        case None    => myStructure += ((curAlpha, curBeta) -> new DVList())
-        case Some(value) => // do nothing
-      }
-
-      myStructure((curAlpha, curBeta)).addItem(y(i))
+      // return Unit to fix compile error.
+      // the for loop(which actually is a foreach) cannot work out the return type which we don't need
+      Unit
     }
 
     alphaIndices = alphaIndices.map{case (k,v) => (k, v.distinct)}
