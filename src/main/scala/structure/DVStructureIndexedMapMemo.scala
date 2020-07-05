@@ -81,9 +81,9 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     zetaIndicesWithoutDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1!=a._2))}
     zetaIndicesDoubles = zetaIndices.map{case (k,v) => (k, v.filter(a => a._1==a._2))}.filter(v1 => v1._2.nonEmpty) //Includes only the double z without the zs that do not have doubles
 
-    myStructure.keys.foreach(item => {
-      alphaBetaLengthMat(item._1)(item._2) = myStructure(item._1, item._2).length
-    })
+    myStructure.foreach { case (key, value) =>
+      alphaBetaLengthMat(key._1)(key._2) = value.length
+    }
   }
 
   private val memoizedCalcAlphaSum: Int => Double = Memo.immutableHashMapMemo {
