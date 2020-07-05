@@ -59,11 +59,7 @@ class SymmetricBoth extends SymmetricMain {
     */
   override def nextIndicsInters(oldfullState: FullState, info: InitialInfo): FullState = {
 
-    val curIndicsEstim = (DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels))
-    val curThetaEstim = (DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels))
-    var count = 0.0
-
-    info.structureSorted.foreach(item => {
+    val estimations = info.structureSorted.map(item => ((item.a, item.b), {
       val j = item.a
       val k = item.b
 
@@ -103,22 +99,31 @@ class SymmetricBoth extends SymmetricMain {
 
       if (newProb0 < u) {
         //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
-        curIndicsEstim(item.a, item.b) = 1.0
-        curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
-        count += 1.0
+        val indicsEstim = 1.0
         val varPInter = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Njkkj) //the variance for gammajk
         val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * SigmaTheta) * varPInter
-        curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
-        curThetaEstim(item.b, item.a) = curThetaEstim(item.a, item.b)
+        val thetaEstim = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+        (indicsEstim, thetaEstim)
       }
       else {
         //Update indicator and current interactions if indicator = 0.0
-        curIndicsEstim(item.a, item.b) = 0.0
-        curIndicsEstim(item.b, item.a) = curIndicsEstim(item.a, item.b)
-        curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
-        curThetaEstim(item.b, item.a) = curThetaEstim(item.a, item.b)
+        val indicsEstim = 0.0
+        val thetaEstim = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
+        (indicsEstim, thetaEstim)
       }
-    })
+    }))
+
+    val curIndicsEstim = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
+    val curThetaEstim = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
+
+    estimations.seq //make sure we are on single thread to access the collections above without concurrency problem
+      .foreach { case (key, value) =>
+        curIndicsEstim(key._1, key._2) = value._1
+        curIndicsEstim(key._2, key._1) = value._1
+        curThetaEstim(key._1, key._2) = value._2
+        curThetaEstim(key._2, key._1) = value._2
+      }
+
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim *:* curIndicsEstim)
   }
 

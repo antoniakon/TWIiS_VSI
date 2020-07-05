@@ -106,11 +106,7 @@ class SymmetricMain extends VariableSelection {
     */
   override def nextIndicsInters(oldfullState: FullState, info: InitialInfo):FullState= {
 
-    val curIndicsEstim = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
-    val curThetaEstim = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
-    var count = 0.0
-
-    info.structure.foreach( item => {
+    val estimations = info.structure.map(item => ((item.a, item.b), {
       val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
       val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
 
@@ -129,18 +125,28 @@ class SymmetricMain extends VariableSelection {
 
       if (newProb0 < u) {
         //prob0: Probability for when the indicator = 0, so if prob0 < u => indicator = 1
-        curIndicsEstim(item.a, item.b) = 1.0
-        count += 1.0
+        val indicsEstim = 1.0
         val varPInter = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Njk) //the variance for gammajk
         val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.zcoefs(item.a) + oldfullState.zcoefs(item.b)))) * varPInter
-        curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+        val thetaEstim = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+        (indicsEstim, thetaEstim)
       }
       else {
         //Update indicator and current interactions if indicator = 0.0
-        curIndicsEstim(item.a,item.b) = 0.0
-        curThetaEstim(item.a,item.b) = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
+        val indicsEstim = 0.0
+        val thetaEstim = breeze.stats.distributions.Gaussian(info.thetaPriorMean, sqrt(1 / oldfullState.tauabth(1))).draw() // sample from the prior of interactions
+        (indicsEstim, thetaEstim)
       }
-    })
+    }))
+    val curIndicsEstim = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
+    val curThetaEstim = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
+
+    estimations.seq //make sure we are on single thread to access the collections above without concurrency problem
+      .foreach { case (key, value) =>
+        curIndicsEstim(key._1, key._2) = value._1
+        curThetaEstim(key._1, key._2) = value._2
+      }
+
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim*:*curIndicsEstim)
   }
 
@@ -167,11 +173,9 @@ class SymmetricMain extends VariableSelection {
     * Calculate the sum of all the zeta 1 and all the zeta 2 effects for all the observations.
     */
   def sumAllMainInterEff(structure: DVStructure, zetaEff: DenseVector[Double], nz: Int, interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-    var totalsum = 0.0
-    structure.foreach(item => {
-      totalsum += item.list.length * (zetaEff(item.a) + zetaEff(item.b) + indics(item.a, item.b) * interEff(item.a, item.b))
-    })
-    totalsum
+    structure.map(item => {
+      item.list.length * (zetaEff(item.a) + zetaEff(item.b) + indics(item.a, item.b) * interEff(item.a, item.b))
+    }).sum
   }
 
   /**
@@ -200,13 +204,11 @@ class SymmetricMain extends VariableSelection {
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
   def YminusMuAndEffects(structure:DVStructure, mu: Double, zetaEff: DenseVector[Double], interEff: DenseMatrix[Double], indics: DenseMatrix[Double]): Double = {
-      var sum = 0.0
-      structure.foreach( item => {
+      structure.map( item => {
         val a = item.a
         val b = item.b
-        sum += item.list.foldLeft(0.0)((sum, x) => sum + scala.math.pow(x - mu - zetaEff(a) - zetaEff(b) - interEff(a, b) * indics(a, b), 2))
-      })
-      sum
+        item.list.foldLeft(0.0)((sum, x) => sum + scala.math.pow(x - mu - zetaEff(a) - zetaEff(b) - interEff(a, b) * indics(a, b), 2))
+      }).sum
   }
 
   override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"

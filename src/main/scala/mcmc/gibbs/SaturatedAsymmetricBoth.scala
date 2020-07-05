@@ -121,16 +121,24 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     * Function for updating interaction coefficients
     */
   override def nextIndicsInters(oldfullState: FullState, info: InitialInfo): FullState = {
-    val curThetaEstim = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
 
-    info.structure.foreach(item => {
+    val estimations = info.structure.map(item => ((item.a, item.b), {
       val Njk = item.list.length // the number of the observations that have alpha==j and beta==k
       val SXjk = item.list.sum // the sum of the observations that have alpha==j and beta==k
 
       val varPInter = 1.0 / (oldfullState.tauabth(2) + oldfullState.mt(1) * Njk) //the variance for gammajk
       val meanPInter = (info.thetaPriorMean * oldfullState.tauabth(2) + oldfullState.mt(1) * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b)))) * varPInter
-      curThetaEstim(item.a, item.b) = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
-    })
+      val thetaEstim = breeze.stats.distributions.Gaussian(meanPInter, sqrt(varPInter)).draw()
+      thetaEstim
+    }))
+
+    val curThetaEstim = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
+
+    estimations.seq //make sure we are on single thread to access the collections above without concurrency problem
+      .foreach { case (key, value) =>
+        curThetaEstim(key._1, key._2) = value
+      }
+
     oldfullState.copy(thcoefs = curThetaEstim)
   }
 
@@ -160,11 +168,9 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     * Calculate the sum of all the alpha and all the beta effects for all the observations.
     */
   def sumAllMainInterEff(structure: DVStructure, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double]): Double = {
-    var totalsum = 0.0
-    structure.foreach(item => {
-      totalsum += item.list.length * (alphaEff(item.a) + betaEff(item.b) + interEff(item.a, item.b))
-    })
-    totalsum
+    structure.map(item => {
+      item.list.length * (alphaEff(item.a) + betaEff(item.b) + interEff(item.a, item.b))
+    }).sum
   }
 
   /**
@@ -193,14 +199,12 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     * Calculate the Yi-mu-u_eff-n_eff- inter_effe. To be used in estimating tau
     */
   def YminusMuAndEffects(structure: DVStructure, mu: Double, alphaEff: DenseVector[Double], betaEff: DenseVector[Double], interEff: DenseMatrix[Double]): Double = {
-    var sum = 0.0
 
-    structure.foreach(item => {
+    structure.map(item => {
       val a = item.a
       val b = item.b
-      sum += item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) , 2)).sum
-    })
-    sum
+      item.list.map(x => scala.math.pow(x - mu - alphaEff(a) - betaEff(b) - interEff(a, b) , 2)).sum
+    }).sum
   }
 
   override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
