@@ -4,6 +4,7 @@ import breeze.linalg.{DenseVector, max}
 import scalaz.Memo
 
 import scala.collection.mutable.ListBuffer
+import scala.collection.parallel.ParIterable
 import scala.collection.parallel.immutable.ParMap
 
 class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int], beta: DenseVector[Int]) extends DVStructure {
@@ -152,6 +153,11 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
 
   override def foreach[U](f: DVItem => U): Unit = {
     myStructure.foreach( item => f(new DVItem(item._1._1, item._1._2, item._2)) )
+  }
+
+  def map[T](f: DVItem => T): ParIterable[T] = {
+
+    myStructure.map( item => f(new DVItem(item._1._1, item._1._2, item._2)))
   }
 
   private val memoizedgetAllItemsForGivenA: Int => List[DVItem] = Memo.immutableHashMapMemo {
