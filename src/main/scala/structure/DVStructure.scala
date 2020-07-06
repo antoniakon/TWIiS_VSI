@@ -50,8 +50,6 @@ trait DVStructure {
     */
   def getDVList(j: Int, k: Int): DVList
 
-  def foreach[U](f: DVItem => U): Unit
-
   def map[T](f: DVItem => T): ParIterable[T]
 
   def getAllItemsForGivenA(a : Int): List[DVItem]

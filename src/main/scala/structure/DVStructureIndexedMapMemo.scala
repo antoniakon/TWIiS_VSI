@@ -151,10 +151,6 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     myStructure(j,k)
   }
 
-  override def foreach[U](f: DVItem => U): Unit = {
-    myStructure.foreach( item => f(new DVItem(item._1._1, item._1._2, item._2)) )
-  }
-
   def map[T](f: DVItem => T): ParIterable[T] = {
 
     myStructure.map( item => f(new DVItem(item._1._1, item._1._2, item._2)))
