@@ -65,10 +65,11 @@ object MainRunner {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val p = 0.2
     val burnIn = 10
+    val logLikFlag = true
 
     val initialInfo = InitialInfo(noOfIters, thin, burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
-      a, b, aPrior, bPrior, p)
+      a, b, aPrior, bPrior, p, logLikFlag)
 
     varSelectionObject.time(
       varSelectionObject.variableSelection(initialInfo)
