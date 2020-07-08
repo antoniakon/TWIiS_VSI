@@ -44,7 +44,11 @@ class AsymmetricBoth extends VariableSelection {
     val obsMinusFitted = YminusMuAndEffects(info.structure, newmu, oldfullState.acoefs, oldfullState.bcoefs, oldfullState.thcoefs, oldfullState.indics)
     //Use the just updated mu to estimate tau
     val newtau = breeze.stats.distributions.Gamma(info.a + info.N / 2.0, 1.0 / (info.b + 0.5 * obsMinusFitted)).draw() //  !!!!TO SAMPLE FROM THE GAMMA DISTRIBUTION IN BREEZE THE β IS 1/β
-    val newLogLik = 0.5 * info.N * (log(newtau) - log(2 * Pi)) - 0.5 * newtau * obsMinusFitted // Caclulate the logLikelihood
+    val newLogLik = if (info.logLikFlag) {
+      0.5 * info.N * (log(newtau) - log(2 * Pi)) - 0.5 * newtau * obsMinusFitted // Calculate the logLikelihood
+    }else{
+      0.0
+    }
     oldfullState.copy(mt = DenseVector(newmu, newtau), logLik = newLogLik)
   }
 
