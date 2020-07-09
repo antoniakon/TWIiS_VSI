@@ -26,9 +26,22 @@ class AsymmetricBoth extends VariableSelection {
     val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val loglik = 0.0
+    val incProb = 0.0
 
-    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus, loglik)
+    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus, loglik, incProb)
         calculateAllStates(info.noOfIter, info, fullStateInit)
+  }
+
+  /**
+    * Function for updating the inclusion probability p
+    */
+  override def nextInclusionProb(oldfullState: FullState, info: InitialInfo): FullState = {
+    val njk = info.structure.sizeOfStructure()
+    val SumIjk = breeze.linalg.sum(oldfullState.indics)
+    val alphaP = info.pap + SumIjk
+    val betaP = info.pbp + njk - SumIjk
+    val newp = breeze.stats.distributions.Beta.distribution(alphaP, betaP).draw()
+    oldfullState.copy(inclProb = newp)
   }
 
   /**
@@ -140,8 +153,8 @@ class AsymmetricBoth extends VariableSelection {
       //log-sum-exp trick
       val thcoef = oldfullState.thcoefs(item.a, item.b)
       val logInitExp = oldfullState.mt(1) * thcoef * (SXjk - Njk * (oldfullState.mt(0) + oldfullState.acoefs(item.a) + oldfullState.bcoefs(item.b) + 0.5 * thcoef))
-      val logProb0 = log(1.0 - info.p) //The log of the probability I=0
-      val logProb1 = log(info.p) + logInitExp //The log of the probability I=1
+      val logProb0 = log(1.0 - oldfullState.inclProb) //The log of the probability I=0
+      val logProb1 = log(oldfullState.inclProb) + logInitExp //The log of the probability I=1
       val maxProb = max(logProb0, logProb1) //Find the max of the two probabilities
       val scaledProb0 = exp(logProb0 - maxProb) //Scaled by subtracting the max value and exponentiating
       val scaledProb1 = exp(logProb1 - maxProb) //Scaled by subtracting the max value and exponentiating
@@ -233,13 +246,13 @@ class AsymmetricBoth extends VariableSelection {
     sum
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricMarch/asymmetricBoth"
+  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
 
   override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterAsymmetricBoth.csv")
 
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime1m15x20AsymmetricBothNewWay.txt")
+  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaPriorpBeta2-10AsymBoth1m.txt")
 
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/asymmetricBothScalaRes.csv")
+  override def getOutputFilePath(): String = getFilesDirectory.concat("/ScalaPriorpBeta2-10AsymBoth1m.csv")
 
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath))
@@ -256,7 +269,7 @@ class AsymmetricBoth extends VariableSelection {
         (1 to info.alphaLevels).map { i => "indics".concat(i.toString).concat(entry) }.mkString(",")
       }.mkString(",")
 
-    pw.append("mu ,tau, taua, taub, tauInt, logLik,")
+    pw.append("mu ,tau, taua, taub, tauInt, logLik, p,")
       .append( (1 to info.alphaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
       .append(",")
       .append( (1 to info.betaLevels).map { i => "beta".concat(i.toString) }.mkString(",") )
@@ -281,6 +294,8 @@ class AsymmetricBoth extends VariableSelection {
         .append( fullstate.tauabth.toArray.map { tau => tau.toString }.mkString(",") )
         .append(",")
         .append(fullstate.logLik.toString)
+        .append(",")
+        .append(fullstate.inclProb.toString)
         .append(",")
         .append( fullstate.acoefs.toArray.map { alpha => alpha.toString }.mkString(",") )
         .append(",")

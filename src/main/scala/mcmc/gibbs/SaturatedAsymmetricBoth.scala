@@ -25,9 +25,18 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     val initIndics = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val initFinals = DenseMatrix.zeros[Double](info.alphaLevels, info.betaLevels)
     val loglik = 0.0
+    val incProb = 0.0
 
-    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus, loglik)
+    val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus, loglik, incProb)
     calculateAllStates(info.noOfIter, info, fullStateInit)
+  }
+
+  /**
+    * Does not apply in the Saturated model. Just return 0.0
+    * Function for updating the inclustion probability p
+    */
+  override def nextInclusionProb(oldfullState: FullState, info: InitialInfo): FullState = {
+    oldfullState.copy(inclProb = 0.0)
   }
 
   /**
