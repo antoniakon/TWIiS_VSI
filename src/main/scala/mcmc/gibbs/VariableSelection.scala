@@ -12,6 +12,7 @@ abstract class VariableSelection {
   def getOutputRuntimeFilePath() : String
   def getOutputFilePath() : String
   def variableSelection(info: InitialInfo)
+  protected def nextInclusionProb(oldfullState: FullState, info: InitialInfo): FullState
   protected def nextmutau(oldfullState: FullState, info: InitialInfo): FullState
   protected def nexttaus(oldfullState: FullState, info: InitialInfo):FullState
   protected def nextCoefs(oldfullState: FullState, info: InitialInfo):FullState
@@ -72,7 +73,8 @@ abstract class VariableSelection {
   }
 
   private def calculateNextState(info: InitialInfo, fstate: FullState): FullState = {
-    val latesttaus = nexttaus(fstate, info)
+    val latestp = nextInclusionProb(fstate, info)
+    val latesttaus = nexttaus(latestp, info)
     val latestcoefs = nextCoefs(latesttaus, info)
     val latestIndicsInters = nextIndicsInters(latestcoefs, info)
     val latestFullyUpdatedState = nextmutau(latestIndicsInters, info)
