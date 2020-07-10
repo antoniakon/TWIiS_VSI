@@ -14,27 +14,39 @@ object MainRunner {
       val outputFile = "/try.csv"
       val outputTimeFile = "/try.txt"
       val caseToRun = "AsymmetricBoth"
-      val noOfIters = 100000
+      val noOfIterations = 100000
       val thin = 10
       val burnIn = 1000
       val logLikFlag = true
 
-      Arguments(noOfIters, thin, burnIn, logLikFlag, caseToRun, filePath, inputFile, outputFile, outputTimeFile)
+      Arguments(noOfIterations, thin, burnIn, logLikFlag, caseToRun, filePath, inputFile, outputFile, outputTimeFile)
     }
 
-    val defaultArgs = setDefaultValues()
+    def setValuesFromArguments(defaultArgs: Arguments, argums: Array[String]) = {
+      if(argums.size == 0){
+        defaultArgs
+      }else if(defaultArgs.getClass.getDeclaredFields.size == args.size){
+        Arguments(argums(0).toInt, argums(1).toInt, argums(2).toInt, argums(3).toBoolean, argums(4), argums(5), argums(6), argums(7), argums(8))
+        // (noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String)
+      }else{
+        throw new Exception("Wrong number of arguments passed. \n Arguments need to be: noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String")
+      }
+    }
 
-    val varSelectionObject = getVariableSelectionVariant(defaultArgs.caseToRun)
+    val defaultArgums = setDefaultValues()
+    val updatedArgums = setValuesFromArguments(defaultArgums, args)
 
-    varSelectionObject.filesDirectory = defaultArgs.pathToFiles
-    varSelectionObject.outputFile = defaultArgs.pathToFiles.concat(defaultArgs.outputFile)
-    varSelectionObject.outputTimeFile = defaultArgs.pathToFiles.concat(defaultArgs.outputTimeFile)
+    val varSelectionObject = getVariableSelectionVariant(updatedArgums.caseToRun)
+
+    varSelectionObject.filesDirectory = updatedArgums.pathToFiles
+    varSelectionObject.outputFile = updatedArgums.pathToFiles.concat(updatedArgums.outputFile)
+    varSelectionObject.outputTimeFile = updatedArgums.pathToFiles.concat(updatedArgums.outputTimeFile)
 
     //stop execution until press enter
     readLine()
 
     // Read the data
-    val data = csvread(new File(defaultArgs.pathToFiles.concat(defaultArgs.inputFile)))
+    val data = csvread(new File(updatedArgums.pathToFiles.concat(updatedArgums.inputFile)))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -85,9 +97,9 @@ object MainRunner {
     val pap = 2
     val pbp = 10
 
-    val initialInfo = InitialInfo(defaultArgs.noOfIters, defaultArgs.thin, defaultArgs.burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
+    val initialInfo = InitialInfo(updatedArgums.noOfIters, updatedArgums.thin, updatedArgums.burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
-      a, b, aPrior, bPrior, pap, pbp, defaultArgs.logLikFlag)
+      a, b, aPrior, bPrior, pap, pbp, updatedArgums.logLikFlag)
 
     varSelectionObject.time(
       varSelectionObject.variableSelection(initialInfo)
