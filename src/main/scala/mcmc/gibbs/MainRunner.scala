@@ -12,12 +12,18 @@ object MainRunner {
     val inputFile = "/simulInterAsymmetricBoth.csv"
     val outputFile = "/try.csv"
     val outputTimeFile = "/try.txt"
-    // pass in here the argument for object
-    val varSelectionObject = getVariableSelectionVariant()
+    val objectToRun = "AsymmetricBoth"
+    val noOfIters = 100000
+    val thin = 10
+    val burnIn = 1000
+    val logLikFlag = true
+
+    val varSelectionObject = getVariableSelectionVariant(objectToRun)
+
     varSelectionObject.filesDirectory = filePath
     varSelectionObject.outputFile = filePath.concat(outputFile)
     varSelectionObject.outputTimeFile = filePath.concat(outputTimeFile)
-
+    
     //stop execution until press enter
     readLine()
 
@@ -61,8 +67,6 @@ object MainRunner {
     val betaLevelsDist = betaDistinct.length
 
     // Parameters
-    val noOfIters = 100000
-    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -74,8 +78,6 @@ object MainRunner {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val pap = 2
     val pbp = 10
-    val burnIn = 1000
-    val logLikFlag = true
 
     val initialInfo = InitialInfo(noOfIters, thin, burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
@@ -86,13 +88,27 @@ object MainRunner {
     )
   }
 
-  private def getVariableSelectionVariant() : VariableSelection = {
-    object myAsymmetricBoth extends AsymmetricBoth
-    object mySymmetricInters extends SymmetricInters
-    object mySymmetricMain extends SymmetricMain
-    object mySymmetricBoth extends SymmetricBoth
-    object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
-    myAsymmetricBoth
+  private def getVariableSelectionVariant(s: String) : VariableSelection = {
+
+    val objectToRun = if (s.equalsIgnoreCase("AsymmetricBoth")){
+      object myAsymmetricBoth extends AsymmetricBoth
+      myAsymmetricBoth
+    } else if (s.equalsIgnoreCase("SymmetricInteractions")){
+      object mySymmetricInters extends SymmetricInters
+      mySymmetricInters
+    }else if (s.equalsIgnoreCase("SymmetricMain")) {
+      object mySymmetricMain extends SymmetricMain
+      mySymmetricMain
+    }else if (s.equalsIgnoreCase("SymmetricBoth")) {
+      object mySymmetricBoth extends SymmetricBoth
+      mySymmetricBoth
+    }else if (s.equalsIgnoreCase("Saturated")) {
+      object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
+      mySatAsymmetricBoth
+    }else{
+      throw new Exception("Wrong model declaration. Should be one of: \"AsymmetricBoth\", \"SymmetricInteractions\", \"SymmetricMain\", \"SymmetricBoth\", \"Saturated\" ")
+    }
+    objectToRun
   }
 }
 
