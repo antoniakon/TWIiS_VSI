@@ -8,27 +8,33 @@ import scala.io.StdIn.readLine
 object MainRunner {
   def main(args: Array[String]): Unit = {
 
-    val filePath = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
-    val inputFile = "/simulInterAsymmetricBoth.csv"
-    val outputFile = "/try.csv"
-    val outputTimeFile = "/try.txt"
-    val objectToRun = "AsymmetricBoth"
-    val noOfIters = 100000
-    val thin = 10
-    val burnIn = 1000
-    val logLikFlag = true
+    def setDefaultValues() = {
+      val filePath = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
+      val inputFile = "/simulInterAsymmetricBoth.csv"
+      val outputFile = "/try.csv"
+      val outputTimeFile = "/try.txt"
+      val caseToRun = "AsymmetricBoth"
+      val noOfIters = 100000
+      val thin = 10
+      val burnIn = 1000
+      val logLikFlag = true
 
-    val varSelectionObject = getVariableSelectionVariant(objectToRun)
+      Arguments(noOfIters, thin, burnIn, logLikFlag, caseToRun, filePath, inputFile, outputFile, outputTimeFile)
+    }
 
-    varSelectionObject.filesDirectory = filePath
-    varSelectionObject.outputFile = filePath.concat(outputFile)
-    varSelectionObject.outputTimeFile = filePath.concat(outputTimeFile)
-    
+    val defaultArgs = setDefaultValues()
+
+    val varSelectionObject = getVariableSelectionVariant(defaultArgs.caseToRun)
+
+    varSelectionObject.filesDirectory = defaultArgs.pathToFiles
+    varSelectionObject.outputFile = defaultArgs.pathToFiles.concat(defaultArgs.outputFile)
+    varSelectionObject.outputTimeFile = defaultArgs.pathToFiles.concat(defaultArgs.outputTimeFile)
+
     //stop execution until press enter
     readLine()
 
     // Read the data
-    val data = csvread(new File(filePath.concat(inputFile)))
+    val data = csvread(new File(defaultArgs.pathToFiles.concat(defaultArgs.inputFile)))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -79,9 +85,9 @@ object MainRunner {
     val pap = 2
     val pbp = 10
 
-    val initialInfo = InitialInfo(noOfIters, thin, burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
+    val initialInfo = InitialInfo(defaultArgs.noOfIters, defaultArgs.thin, defaultArgs.burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
-      a, b, aPrior, bPrior, pap, pbp, logLikFlag)
+      a, b, aPrior, bPrior, pap, pbp, defaultArgs.logLikFlag)
 
     varSelectionObject.time(
       varSelectionObject.variableSelection(initialInfo)
