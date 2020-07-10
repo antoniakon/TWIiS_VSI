@@ -140,14 +140,6 @@ class SymmetricBoth extends SymmetricMain {
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim *:* curIndicsEstim)
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricBoth"
-
-  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricBoth.csv")
-
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaPriorpBeta2-10SymBoth1m.txt")
-
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/ScalaPriorpBeta2-10SymBoth1m.csv")
-
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath()))
 

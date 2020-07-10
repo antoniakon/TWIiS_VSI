@@ -228,14 +228,6 @@ class SymmetricMain extends VariableSelection {
       }).sum
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricMain"
-
-  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricMain.csv")
-
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaPriorpBeta2-10SymMain1m.txt")
-
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/ScalaPriorpBeta2-10SymMain1m.csv")
-
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath()))
 

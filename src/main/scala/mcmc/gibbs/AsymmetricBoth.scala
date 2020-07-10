@@ -253,14 +253,6 @@ class AsymmetricBoth extends VariableSelection {
     }).sum
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
-
-  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterAsymmetricBoth.csv")
-
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaPriorpBeta2-10AsymBoth1m.txt")
-
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/ScalaPriorpBeta2-10AsymBoth1m.csv")
-
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath))
 

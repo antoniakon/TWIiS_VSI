@@ -7,10 +7,9 @@ import breeze.linalg.{*, DenseMatrix, csvread}
 import breeze.stats.mean
 
 abstract class VariableSelection {
-  def getFilesDirectory() : String
-  def getInputFilePath(): String
-  def getOutputRuntimeFilePath() : String
-  def getOutputFilePath() : String
+  protected def getFilesDirectory() : String = filesDirectory
+  protected def getOutputRuntimeFilePath() : String = outputTimeFile
+  protected def getOutputFilePath() : String = outputFile
   def variableSelection(info: InitialInfo)
   protected def nextInclusionProb(oldfullState: FullState, info: InitialInfo): FullState
   protected def nextmutau(oldfullState: FullState, info: InitialInfo): FullState
@@ -18,6 +17,10 @@ abstract class VariableSelection {
   protected def nextCoefs(oldfullState: FullState, info: InitialInfo):FullState
   protected def nextIndicsInters(oldfullState: FullState, info: InitialInfo):FullState
   private val executor = Executors.newSingleThreadExecutor()
+
+  var filesDirectory: String = null
+  var outputFile: String = null
+  var outputTimeFile: String = null
 
   protected final def calculateAllStates(n:Int, info: InitialInfo, fstate:FullState) = {
     //with recursion

@@ -7,13 +7,46 @@ import scala.io.StdIn.readLine
 
 object MainRunner {
   def main(args: Array[String]): Unit = {
-    val varSelectionObject = getVariableSelectionVariant()
+
+    def setDefaultValues() = {
+      val filePath = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
+      val inputFile = "/simulInterAsymmetricBoth.csv"
+      val outputFile = "/try.csv"
+      val outputTimeFile = "/try.txt"
+      val caseToRun = "AsymmetricBoth"
+      val noOfIterations = 100000
+      val thin = 10
+      val burnIn = 1000
+      val logLikFlag = true
+
+      Arguments(noOfIterations, thin, burnIn, logLikFlag, caseToRun, filePath, inputFile, outputFile, outputTimeFile)
+    }
+
+    def setValuesFromArguments(defaultArgs: Arguments, argums: Array[String]) = {
+      if(argums.size == 0){
+        defaultArgs
+      }else if(defaultArgs.getClass.getDeclaredFields.size == args.size){
+        Arguments(argums(0).toInt, argums(1).toInt, argums(2).toInt, argums(3).toBoolean, argums(4), argums(5), argums(6), argums(7), argums(8))
+        // (noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String)
+      }else{
+        throw new Exception("Wrong number of arguments passed. \n Arguments need to be: noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String")
+      }
+    }
+
+    val defaultArgums = setDefaultValues()
+    val updatedArgums = setValuesFromArguments(defaultArgums, args)
+
+    val varSelectionObject = getVariableSelectionVariant(updatedArgums.caseToRun)
+
+    varSelectionObject.filesDirectory = updatedArgums.pathToFiles
+    varSelectionObject.outputFile = updatedArgums.pathToFiles.concat(updatedArgums.outputFile)
+    varSelectionObject.outputTimeFile = updatedArgums.pathToFiles.concat(updatedArgums.outputTimeFile)
 
     //stop execution until press enter
     readLine()
 
     // Read the data
-    val data = csvread(new File(varSelectionObject.getInputFilePath()))
+    val data = csvread(new File(updatedArgums.pathToFiles.concat(updatedArgums.inputFile)))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -52,8 +85,6 @@ object MainRunner {
     val betaLevelsDist = betaDistinct.length
 
     // Parameters
-    val noOfIters = 100000
-    val thin = 10
     val aPrior = 1
     val bPrior = 0.0001
     val alphaPriorMean = 0.0
@@ -65,25 +96,37 @@ object MainRunner {
     val interPriorMean = 0.0 //common mean for all the interaction effects
     val pap = 2
     val pbp = 10
-    val burnIn = 1000
-    val logLikFlag = true
 
-    val initialInfo = InitialInfo(noOfIters, thin, burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
+    val initialInfo = InitialInfo(updatedArgums.noOfIters, updatedArgums.thin, updatedArgums.burnIn, sampleSize, sumObs, structure, structureSorted, alphaLevels, betaLevels, zetaLevels, noOfInters, sizeofDouble, alphaLevelsDist, betaLevelsDist,  zetaLevelsDist, noOftriangular,
       alphaPriorMean, betaPriorMean, interPriorMean, mu0, tau0,
-      a, b, aPrior, bPrior, pap, pbp, logLikFlag)
+      a, b, aPrior, bPrior, pap, pbp, updatedArgums.logLikFlag)
 
     varSelectionObject.time(
       varSelectionObject.variableSelection(initialInfo)
     )
   }
 
-  private def getVariableSelectionVariant() : VariableSelection = {
-    object myAsymmetricBoth extends AsymmetricBoth
-    object mySymmetricInters extends SymmetricInters
-    object mySymmetricMain extends SymmetricMain
-    object mySymmetricBoth extends SymmetricBoth
-    object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
-    mySatAsymmetricBoth
+  private def getVariableSelectionVariant(s: String) : VariableSelection = {
+
+    val objectToRun = if (s.equalsIgnoreCase("AsymmetricBoth")){
+      object myAsymmetricBoth extends AsymmetricBoth
+      myAsymmetricBoth
+    } else if (s.equalsIgnoreCase("SymmetricInteractions")){
+      object mySymmetricInters extends SymmetricInters
+      mySymmetricInters
+    }else if (s.equalsIgnoreCase("SymmetricMain")) {
+      object mySymmetricMain extends SymmetricMain
+      mySymmetricMain
+    }else if (s.equalsIgnoreCase("SymmetricBoth")) {
+      object mySymmetricBoth extends SymmetricBoth
+      mySymmetricBoth
+    }else if (s.equalsIgnoreCase("Saturated")) {
+      object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
+      mySatAsymmetricBoth
+    }else{
+      throw new Exception("Wrong model declaration. Should be one of: \"AsymmetricBoth\", \"SymmetricInteractions\", \"SymmetricMain\", \"SymmetricBoth\", \"Saturated\" ")
+    }
+    objectToRun
   }
 }
 
