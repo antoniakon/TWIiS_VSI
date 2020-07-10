@@ -212,14 +212,6 @@ class SaturatedAsymmetricBoth extends VariableSelection {
     sum
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
-
-  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterAsymmetricBoth.csv")
-
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaRuntime1m15x20AsymmetricBothSaturated.txt")
-
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/Scala1mAsymBothSaturated15x20.csv")
-
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath))
 

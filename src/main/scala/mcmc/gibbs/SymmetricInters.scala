@@ -142,14 +142,6 @@ class SymmetricInters extends AsymmetricBoth {
     oldfullState.copy(thcoefs = curThetaEstim, indics = curIndicsEstim, finalCoefs = curThetaEstim *:* curIndicsEstim)
   }
 
-  override def getFilesDirectory(): String = "/home/antonia/ResultsFromCloud/Report/symmetricNov/symmetricInters"
-
-  override def getInputFilePath(): String = getFilesDirectory.concat("/simulInterSymmetricInters.csv")
-
-  override def getOutputRuntimeFilePath(): String = getFilesDirectory().concat("/ScalaPriorpBeta2-10SymInters1m.txt")
-
-  override def getOutputFilePath(): String = getFilesDirectory.concat("/ScalaPriorpBeta2-10SymInters1m.csv")
-
   override def printTitlesToFile(info: InitialInfo): Unit = {
     val pw = new PrintWriter(new File(getOutputFilePath()))
 

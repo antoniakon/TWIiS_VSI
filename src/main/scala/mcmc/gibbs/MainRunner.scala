@@ -7,13 +7,22 @@ import scala.io.StdIn.readLine
 
 object MainRunner {
   def main(args: Array[String]): Unit = {
+
+    val filePath = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
+    val inputFile = "/simulInterAsymmetricBoth.csv"
+    val outputFile = "/try.csv"
+    val outputTimeFile = "/try.txt"
+    // pass in here the argument for object
     val varSelectionObject = getVariableSelectionVariant()
+    varSelectionObject.filesDirectory = filePath
+    varSelectionObject.outputFile = filePath.concat(outputFile)
+    varSelectionObject.outputTimeFile = filePath.concat(outputTimeFile)
 
     //stop execution until press enter
     readLine()
 
     // Read the data
-    val data = csvread(new File(varSelectionObject.getInputFilePath()))
+    val data = csvread(new File(filePath.concat(inputFile)))
     val sampleSize = data.rows
     val y = data(::, 0)
     val sumObs = y.toArray.sum // Sum of the values of all the observations
@@ -83,7 +92,7 @@ object MainRunner {
     object mySymmetricMain extends SymmetricMain
     object mySymmetricBoth extends SymmetricBoth
     object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
-    mySatAsymmetricBoth
+    myAsymmetricBoth
   }
 }
 
