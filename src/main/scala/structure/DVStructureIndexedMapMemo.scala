@@ -16,7 +16,7 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   val betaLevels = beta.toArray.distinct.max+1
   val zetaLevels = max(alphaLevels, betaLevels)
 
-  private val myStructure : ParMap[(Int, Int), DVList] = initMyStucture()
+  private val myStructure : Map[(Int, Int), DVList] = initMyStucture()
   private var alphaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var betaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
   private var zetaIndices = scala.collection.mutable.Map[Int, ListBuffer[(Int, Int)]]()
@@ -26,7 +26,7 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
   private var allItemsMappedbyB = Map[Int, List[DVItem]]()
   private val alphaBetaLengthMat = Array.ofDim[Double](zetaLevels, zetaLevels).map(x=> x.map(y => 0.0))
 
-  private def initMyStucture() : ParMap[(Int, Int), DVList] = {
+  private def initMyStucture() : Map[(Int, Int), DVList] = {
     val tempStructure = scala.collection.mutable.Map[(Int, Int), DVList]()
 
     for (i <- 0 until y.length) {
@@ -41,7 +41,7 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
       tempStructure((curAlpha, curBeta)).addItem(y(i))
     }
 
-    tempStructure.toMap.par
+    tempStructure.toMap
   }
 
   init()
@@ -151,7 +151,7 @@ class DVStructureIndexedMapMemo(y: DenseVector[Double], alpha: DenseVector[Int],
     myStructure(j,k)
   }
 
-  def map[T](f: DVItem => T): ParIterable[T] = {
+  def map[T](f: DVItem => T): Iterable[T] = {
 
     myStructure.map( item => f(new DVItem(item._1._1, item._1._2, item._2)))
   }
