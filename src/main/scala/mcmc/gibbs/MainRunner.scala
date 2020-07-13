@@ -29,7 +29,7 @@ object MainRunner {
         Arguments(argums(0).toInt, argums(1).toInt, argums(2).toInt, argums(3).toBoolean, argums(4), argums(5), argums(6), argums(7), argums(8))
         // (noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String)
       }else{
-        throw new Exception("Wrong number of arguments passed. \n Arguments need to be: noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String")
+        throw new RuntimeException("Wrong number of arguments passed. \n Arguments need to be: noOfIters: Int, thin: Int, burnIn: Int, logLikFlag: Boolean, caseToRun: String, pathToFiles: String, inputFile: String, outputFile: String, outputTimeFile: String")
       }
     }
 
@@ -124,7 +124,7 @@ object MainRunner {
       object mySatAsymmetricBoth extends SaturatedAsymmetricBoth
       mySatAsymmetricBoth
     }else{
-      throw new Exception("Wrong model declaration. Should be one of: \"AsymmetricBoth\", \"SymmetricInteractions\", \"SymmetricMain\", \"SymmetricBoth\", \"Saturated\" ")
+      throw new RuntimeException("Wrong model declaration. Should be one of: \"AsymmetricBoth\", \"SymmetricInteractions\", \"SymmetricMain\", \"SymmetricBoth\", \"Saturated\" ")
     }
     objectToRun
   }
