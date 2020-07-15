@@ -43,7 +43,7 @@ object MainRunner {
     varSelectionObject.outputTimeFile = updatedArgums.pathToFiles.concat(updatedArgums.outputTimeFile)
 
     //stop execution until press enter
-    readLine()
+    //readLine()
 
     // Read the data
     val data = csvread(new File(updatedArgums.pathToFiles.concat(updatedArgums.inputFile)))
