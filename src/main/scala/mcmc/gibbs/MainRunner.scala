@@ -44,6 +44,7 @@ object MainRunner {
 
     //stop execution until press enter
     //readLine()
+    println("Running")
 
     // Read the data
     val data = csvread(new File(updatedArgums.pathToFiles.concat(updatedArgums.inputFile)))
