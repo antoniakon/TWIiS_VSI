@@ -18,8 +18,8 @@ class SymmetricInters extends AsymmetricBoth {
     // Initialise case class objects
     val initmt = DenseVector[Double](0.0, 1.0)
     val inittaus = DenseVector[Double](1.0, 1.0, 1.0)
-    val initAlphaCoefs = DenseVector.zeros[Double](info.alphaLevels)
-    val initBetaCoefs = DenseVector.zeros[Double](info.betaLevels)
+    val initAlphaCoefs = DenseVector.zeros[Double](info.zetaLevels)
+    val initBetaCoefs = DenseVector.zeros[Double](info.zetaLevels)
     val initZetaCoefs = DenseVector.zeros[Double](info.zetaLevels)
     val initThetas = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
     val initIndics = DenseMatrix.zeros[Double](info.zetaLevels, info.zetaLevels)
@@ -29,6 +29,44 @@ class SymmetricInters extends AsymmetricBoth {
 
     val fullStateInit = FullState(initAlphaCoefs, initBetaCoefs, initZetaCoefs, initThetas, initIndics, initFinals, initmt, inittaus, loglik, incProb)
     calculateAllStates(info.noOfIter, info, fullStateInit)
+  }
+
+  /**
+    * Function for updating alpha coefficients
+    */
+  override def nextAlphaCoefs(oldfullState: FullState, info: InitialInfo): FullState = {
+    val curAlphaEstim = DenseVector.zeros[Double](info.zetaLevels)
+
+    info.structure.getAllItemsMappedByA().foreach(item => {
+      val j = item._1
+      val SXalphaj = info.structure.calcAlphaSum(j) // the sum of the observations that have alpha==j
+      val Nj = info.structure.calcAlphaLength(j) // the number of the observations that have alpha==j
+      val SumBeta = sumBetaEffGivenAlpha(info.structure, j, oldfullState.bcoefs) //the sum of the beta effects given alpha
+      val SinterAlpha = sumInterEffGivenAlpha(info.structure, j, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given alpha
+      val varPalpha = 1.0 / (oldfullState.tauabth(0) + oldfullState.mt(1) * Nj) //the variance for alphaj
+      val meanPalpha = (info.alphaPriorMean * oldfullState.tauabth(0) + oldfullState.mt(1) * (SXalphaj - Nj * oldfullState.mt(0) - SumBeta - SinterAlpha)) * varPalpha //the mean for alphaj
+      curAlphaEstim(j) = breeze.stats.distributions.Gaussian(meanPalpha, sqrt(varPalpha)).draw()
+    })
+    oldfullState.copy(acoefs = curAlphaEstim)
+  }
+
+  /**
+    * Function for updating beta coefficients
+    */
+  override def nextBetaCoefs(oldfullState: FullState, info: InitialInfo): FullState = {
+    val curBetaEstim = DenseVector.zeros[Double](info.zetaLevels)
+
+    info.structure.getAllItemsMappedByB().foreach(item => {
+      val k = item._1
+      val SXbetak = info.structure.calcBetaSum(k) // the sum of the observations that have beta==k
+      val Nk = info.structure.calcBetaLength(k) // the number of the observations that have beta==k
+      val SumAlpha = sumAlphaGivenBeta(info.structure, k, oldfullState.acoefs) //the sum of the alpha effects given beta
+      val SinterBeta = sumInterEffGivenBeta(info.structure, k, oldfullState.thcoefs, oldfullState.indics) //the sum of the gamma/interaction effects given beta
+      val varPbeta = 1.0 / (oldfullState.tauabth(1) + oldfullState.mt(1) * Nk) //the variance for betak
+      val meanPbeta = (info.betaPriorMean * oldfullState.tauabth(1) + oldfullState.mt(1) * (SXbetak - Nk * oldfullState.mt(0) - SumAlpha - SinterBeta)) * varPbeta //the mean for betak
+      curBetaEstim(k) = breeze.stats.distributions.Gaussian(meanPbeta, sqrt(varPbeta)).draw()
+    })
+    oldfullState.copy(bcoefs = curBetaEstim)
   }
 
   /**
@@ -53,13 +91,13 @@ class SymmetricInters extends AsymmetricBoth {
     oldfullState.acoefs.foreachValue(acoef => {
       sumaj += pow(acoef - info.alphaPriorMean, 2)
     })
-    sumaj -= (info.alphaLevels - info.alphaLevelsDist) * pow(0 - info.alphaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
+    sumaj -= (info.zetaLevels - info.alphaLevelsDist) * pow(0 - info.alphaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
     var sumbk = 0.0
     oldfullState.bcoefs.foreachValue(bcoef => {
       sumbk += pow(bcoef - info.betaPriorMean, 2)
     })
-    sumbk -= (info.betaLevels - info.betaLevelsDist) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
+    sumbk -= (info.zetaLevels - info.betaLevelsDist) * pow(0 - info.betaPriorMean, 2) //For the missing effects (if any) added extra in the sum above
 
     var sumThetajk = 0.0
     upperTriangular(oldfullState.thcoefs).foreachValue(thcoef => { //upperTriangular includes the main diagonal
@@ -158,9 +196,9 @@ class SymmetricInters extends AsymmetricBoth {
       }.mkString(",")
 
     pw.append("mu ,tau, taua, taub, tauInt, logLik, p,")
-      .append( (1 to info.alphaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
+      .append( (1 to info.zetaLevels).map { i => "alpha".concat(i.toString) }.mkString(",") )
       .append(",")
-      .append( (1 to info.betaLevels).map { i => "beta".concat(i.toString) }.mkString(",") )
+      .append( (1 to info.zetaLevels).map { i => "beta".concat(i.toString) }.mkString(",") )
       .append(",")
       .append(thetaTitles)
       .append(",")
