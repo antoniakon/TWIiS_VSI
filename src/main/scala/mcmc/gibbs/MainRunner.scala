@@ -9,10 +9,10 @@ object MainRunner {
   def main(args: Array[String]): Unit = {
 
     def setDefaultValues() = {
-      val filePath = "/home/antonia/ResultsFromCloud/Report/symmetricNov/asymmetricBoth"
+      val filePath = "./data/15x20"
       val inputFile = "/simulInterAsymmetricBoth.csv"
-      val outputFile = "/try.csv"
-      val outputTimeFile = "/try.txt"
+      val outputFile = "/resultsAsymBoth15x20100K.csv"
+      val outputTimeFile = "/timeAsymBoth15x20100K.txt"
       val caseToRun = "AsymmetricBoth"
       val noOfIterations = 100000
       val thin = 10
